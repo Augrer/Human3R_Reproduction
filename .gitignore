@@ -62,3 +62,9 @@ command
 *.pkl
 *.npy
 *.npz
+
+# repro: never commit these
+src/*.pth
+src/models/
+src/croco/models/curope/build/
+*.so
