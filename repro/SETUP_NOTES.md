@@ -46,3 +46,10 @@
 
 ## Practical things
 - Viewer: run demo.py in a job, then VS Code Ports tab -> Forward a Port -> <node>:8080.
+## Data preparation (2026-11-15)
+- TUM-dynamics (8 freiburg3 seqs) and Bonn (5 seqs) downloaded raw to $PROJ/data/{tum,bonn}/
+  (scripts outside the repo: tools/tum_download.sh, tools/bonn_download.sh).
+- Eval subsets built with `python -I repro/datasets_preprocess/prepare_tum_bonn_subsets.py`
+  (port of MonST3R + TTT3R preprocessing; frames hard-linked) into $PROJ/data/long_tum/ and
+  $PROJ/data/long_bonn/. 72,334 files, 52 s on the login node, ~0 extra disk.
+- Protocol ambiguities and upstream quirks found while doing this: see REPRO_NOTES.md.
