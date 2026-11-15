@@ -91,6 +91,7 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-15 | 21558188 | Bonn video depth | 9025e2a | Crashed after the first sequence's inference (`balloon2`, 110 frames), in `save_depth_maps`: matplotlib `get_cmap` (G6). Runtime 11 min. |
 | 2026-11-15 | 21559068 | TUM camera pose | a55c18f (logged) | **Done**, exit 0, 253 min, H100 PCIe (gwn03), 8/8 sequences in all 13 sets. **Provenance caveat:** the job started 12:34:03 and `eval/relpose/utils.py` changed at 12:34:26 (matplotlib fix, 452e340); each subset starts a fresh Python process, so at least `tum_50` onward ran 452e340 code. Only the colour-map line differs and the camera-pose path never calls `colorize`, so the numbers are unaffected. Lesson: see the snapshot rule below. |
 | 2026-11-15 | 21559168 | Bonn video depth | c5e94f3 | **Done**, exit 0, 118 min, H100 PCIe (gwn06), clean tree (code identical to 452e340), 5/5 sequences in all 11 sets, no errors. |
+| 2026-11-15 | 21568115 | RICH global motion (`run_rich.sh`, 191 videos) | 52fc487 | Submitted 18:24 via `submit.sh` (snapshot `runs/rich_eval_52fc487_…`), H100, 20 h limit. |
 
 Practical observations:
 
