@@ -77,7 +77,7 @@ these 5.
 
 ## 6. Running the evals (log)
 
-Every run: `sbatch --job-name=<name> repro/slurm/run.sbatch bash eval/<task>/run.sh`, one full
+Every run (until 2026-11-15 afternoon): `sbatch --job-name=<name> repro/slurm/run.sbatch bash eval/<task>/run.sh`; from then on `bash repro/slurm/submit.sh <name> bash eval/<task>/run.sh`, one full
 H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the G5 symlink. Logs:
 `$PROJ/logs/<name>_<jobid>.out` (node, GPU, commit, command, runtime). Results:
 `$PROJ/outputs/eval_results/` (outside the repo, reached via the gitignored `eval_results` link).
@@ -91,7 +91,7 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 
 Practical observations:
 
-- **Code snapshot rule.** Jobs execute the live working tree, and `run.sh` starts a new Python process per subset, so edits made while a job runs leak into it. Until the wrapper runs each job from a fixed git worktree, do not edit `eval/`, `src/` or `*.py` while an eval job is running.
+- **Code snapshot rule.** Jobs execute the live working tree, and `run.sh` starts a new Python process per subset, so edits made while a job runs leak into it. From commit 0ae6199 on, jobs are submitted with `repro/slurm/submit.sh`, which refuses uncommitted changes and runs the job from a git worktree frozen at submission (`$PROJ/runs/<job>_<commit>_<time>/`, gitignored runtime files symlinked in). The log also records the checkpoint SHA256 (`human3r_896L.pth`: `1c5d8907…a9377`), a hash of the cached DINOv2 hub code, and peak GPU memory. The jobs 21559068 and 21559168 predate this and run the live tree: do not edit `eval/`, `src/` or `*.py` until they finish.
 
 - **Slow cold start.** On the cluster's CephFS, a job's first reads of the conda env and checkpoint were very slow on 2026-11-15. The first TUM job needed about 25 min before inference began (Python imports at about 350 KB/s; `import trimesh, pyglet` took 123 s cold vs 1.3 s warm). It is storage, not the model. **For speed claims (paper: 15 FPS on an RTX 4090), time only the inference loop, never job wall-clock.**
 - **Pre-checks.** After two late crashes we test the scoring and visualisation code on CPU before resubmitting: TUM scoring on the saved `sitting_halfsphere` prediction (ATE 0.037 m, 90 frames; a check, not a report number) and `save_depth_maps` on fake 512×384 tensors.

@@ -7,11 +7,12 @@
 #        bash repro/slurm/submit.sh rich -t 20:00:00 -- bash eval/global_human/run_rich.sh
 # Refuses to run with uncommitted changes to tracked files. Gitignored runtime files (checkpoints,
 # body models, compiled curope, annots, eval_results link) are symlinked into the snapshot.
-# Snapshots: $PROJ/runs/<jobname>_<commit>_<timestamp>/ (remove when done + `git worktree prune`).
+# Snapshots: $PROJ/runs/<jobname>_<commit>_<timestamp>/. Keep until results are final, then
+# `git worktree remove --force <dir>` (force: the runtime symlinks count as untracked).
 set -euo pipefail
 PROJ=/d/hpc/projects/supv2/yt82121/human3r
 REPO=$PROJ/Human3R
-[ $# -ge 2 ] || { sed -n 2,10p "$0"; exit 1; }
+[ $# -ge 2 ] || { sed -n 2,11p "$0"; exit 1; }
 name=$1; shift
 sb=()
 if printf '%s\n' "$@" | grep -qx -- '--'; then
