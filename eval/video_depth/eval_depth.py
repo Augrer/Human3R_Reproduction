@@ -1,4 +1,6 @@
 import os
+# REPRO: dataset root from env var H3R_DATA (default <repo>/../data) instead of /path/to placeholders
+H3R_DATA = os.environ.get("H3R_DATA", os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "data")))
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -69,7 +71,7 @@ def main(args):
             full = False
 
         if full:
-            depth_pathes = glob.glob(f"/path/to/sintel/training/depth/*/*.dpt")
+            depth_pathes = glob.glob(f"{H3R_DATA}/sintel/training/depth/*/*.dpt")
             depth_pathes = sorted(depth_pathes)
         else:
             seq_list = [
@@ -89,7 +91,7 @@ def main(args):
                 "temple_3",
             ]
             depth_pathes_folder = [
-                f"/path/to/sintel/training/depth/{seq}" for seq in seq_list
+                f"{H3R_DATA}/sintel/training/depth/{seq}" for seq in seq_list
             ]
             depth_pathes = []
             for depth_pathes_folder_i in depth_pathes_folder:
@@ -192,7 +194,7 @@ def main(args):
             bonn_number = "110"  # default value
 
         img_pathes_folder = [
-            f"/path/to/long_bonn/rgbd_bonn_{seq}/rgb_{bonn_number}/*.png"
+            f"{H3R_DATA}/long_bonn/rgbd_bonn_{seq}/rgb_{bonn_number}/*.png"
             for seq in seq_list
         ]
         img_pathes = []
@@ -200,7 +202,7 @@ def main(args):
             img_pathes += glob.glob(img_pathes_folder_i)
         img_pathes = sorted(img_pathes)
         depth_pathes_folder = [
-            f"/path/to/long_bonn/rgbd_bonn_{seq}/depth_{bonn_number}/*.png"
+            f"{H3R_DATA}/long_bonn/rgbd_bonn_{seq}/depth_{bonn_number}/*.png"
             for seq in seq_list
         ]
         depth_pathes = []

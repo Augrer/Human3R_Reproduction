@@ -16,7 +16,7 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 
 | # | Observation | Our handling |
 |---|---|---|
-| G1 | **[code]** No data-root option. All dataset paths are hard-coded `/path/to/...` placeholders in `eval/*/metadata.py`, `eval/video_depth/eval_depth.py` and `eval/dataset/prepare_3dpw.py`. | Replace with env var `H3R_DATA` (planned, each edit marked `# REPRO:`). |
+| G1 | **[code]** No data-root option. All dataset paths are hard-coded `/path/to/...` placeholders in `eval/*/metadata.py`, `eval/video_depth/eval_depth.py` and `eval/dataset/prepare_3dpw.py`. | **Done** (2026-11-15): env var `H3R_DATA`, default `<repo>/../data`, one marked `# REPRO:` constant per file; see SETUP_NOTES "Code changes". |
 | G2 | **[paper]** For camera pose and video depth, the paper only says "following prior works [12, 97]". Frame selection, start frame, stride and sequence lengths are not given. The results are shown as **plots over sequence length**, not tables, so the comparison has to be against read-off curve values. | Follow the code's dataset lists (`run.sh`) and the upstream preprocessing (sections 2 and 3). |
 | G3 | **[code] vs [paper]** The paper says "the state is reset every 100 frames". `eval/relpose/run.sh` uses `--reset_interval 100`, but `eval/video_depth/run.sh` uses `--reset_interval 1000000000` (no reset). | Run as in the scripts (which presumably produced the figures); report the mismatch; optional ablation with reset 100 on Bonn. |
 | G4 | **[paper]** The Bonn ablation table (Abs Rel, δ<1.25 next to 3DPW / EMDB-2) does not say which Bonn variant was used (110-frame `bonn` or a `bonn_N`). | Assume `bonn` (110 frames, the default in `eval_depth.py`); flag it. |

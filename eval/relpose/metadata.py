@@ -1,4 +1,6 @@
 import os
+# REPRO: dataset root from env var H3R_DATA (default <repo>/../data) instead of /path/to placeholders
+H3R_DATA = os.environ.get("H3R_DATA", os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "data")))
 import glob
 from tqdm import tqdm
 
@@ -29,7 +31,7 @@ dataset_metadata = {
         "process_func": lambda args, img_path: process_kitti(args, img_path),
     },
     "bonn": {
-        "img_path": "/path/to/rgbd_bonn_dataset",
+        "img_path": os.path.join(H3R_DATA, "long_bonn"),
         "mask_path": None,
         "dir_path_func": lambda img_path, seq: os.path.join(
             img_path, f"rgbd_bonn_{seq}", "rgb_110"
@@ -120,7 +122,7 @@ dataset_metadata = {
         "process_func": lambda args, img_path: process_scannet(args, img_path),
     },
     "tum": {
-        "img_path": "/path/to/tum",
+        "img_path": os.path.join(H3R_DATA, "long_tum"),
         "mask_path": None,
         "dir_path_func": lambda img_path, seq: os.path.join(img_path, seq, "rgb_90"),
         "gt_traj_func": lambda img_path, anno_path, seq: os.path.join(
@@ -134,8 +136,8 @@ dataset_metadata = {
         "process_func": None,
     },
     "sintel": {
-        "img_path": "/path/to/sintel/training/final",
-        "anno_path": "/path/to/sintel/training/camdata_left",
+        "img_path": os.path.join(H3R_DATA, "sintel/training/final"),
+        "anno_path": os.path.join(H3R_DATA, "sintel/training/camdata_left"),
         "mask_path": None,
         "dir_path_func": lambda img_path, seq: os.path.join(img_path, seq),
         "gt_traj_func": lambda img_path, anno_path, seq: os.path.join(anno_path, seq),
@@ -166,7 +168,7 @@ dataset_metadata = {
 tum_numbers = [50, 100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 tum_configs = {
     f"tum_{num}": {
-        "img_path": "/path/to/long_tum",
+        "img_path": os.path.join(H3R_DATA, "long_tum"),
         "mask_path": None,
         "dir_path_func": lambda img_path, seq, num=num: os.path.join(img_path, seq, f"rgb_{num}"),
         "gt_traj_func": lambda img_path, anno_path, seq, num=num: os.path.join(

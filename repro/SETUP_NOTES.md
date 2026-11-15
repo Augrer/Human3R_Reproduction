@@ -53,3 +53,14 @@
   (port of MonST3R + TTT3R preprocessing; frames hard-linked) into $PROJ/data/long_tum/ and
   $PROJ/data/long_bonn/. 72,334 files, 52 s on the login node, ~0 extra disk.
 - Protocol ambiguities and upstream quirks found while doing this: see REPRO_NOTES.md.
+
+## Code changes to upstream (all marked `# REPRO`)
+1. Dataset paths (2026-11-15). Every `/path/to/...` placeholder in the eval code now reads env var
+   `H3R_DATA` (default `<repo>/../data` = $PROJ/data, derived from the file location; no user path
+   in code). Files: eval/global_human/metadata.py, eval/relpose/metadata.py,
+   eval/video_depth/metadata.py, eval/video_depth/eval_depth.py, eval/dataset/prepare_3dpw.py.
+   Mapping: 3DPW/EMDB/RICH/processed_bedlam -> $H3R_DATA/<name>; `tum` and `tum_N` ->
+   $H3R_DATA/long_tum; `bonn` and `bonn_N` (launch AND eval_depth) -> $H3R_DATA/long_bonn
+   (fixes the inconsistent Bonn roots, REPRO_NOTES B1); sintel -> $H3R_DATA/sintel/training/...
+   Not changed: docs/, usage strings, config/trian_human3r.yaml + preprocess_bedlam.py (training).
+   Verified: tum (8x90), tum_1000, bonn (5x110), bonn_500 resolve with frames + GT present.

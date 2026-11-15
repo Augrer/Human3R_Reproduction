@@ -4,6 +4,8 @@
 # Usage: python -m eval.dataset.prepare_3dpw "create_annots()"
 
 import os
+# REPRO: dataset root from env var H3R_DATA (default <repo>/../data) instead of /path/to placeholders
+H3R_DATA = os.environ.get("H3R_DATA", os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "data")))
 os.environ["PYOPENGL_PLATFORM"] = "egl"
 os.environ['EGL_DEVICE_ID'] = '0'
 
@@ -24,7 +26,7 @@ from torch.utils.data import Dataset
 import roma
 
 ANNOT_DIR = "eval/global_human/annots/"
-THREEDPW_DIR = "/path/to/3DPW"
+THREEDPW_DIR = os.path.join(H3R_DATA, "3DPW")  # REPRO
 
 class THREEDPW(Dataset):
     def __init__(self,

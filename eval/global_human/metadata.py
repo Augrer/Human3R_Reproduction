@@ -1,4 +1,6 @@
 import os
+# REPRO: dataset root from env var H3R_DATA (default <repo>/../data) instead of /path/to placeholders
+H3R_DATA = os.environ.get("H3R_DATA", os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "data")))
 import torch
 import numpy as np
 import pickle
@@ -8,7 +10,7 @@ from eval.global_human.data_utils import *
 
 def create_emdb(split):
     return {
-        "img_path": "/path/to/EMDB",
+        "img_path": os.path.join(H3R_DATA, "EMDB"),
         "dir_path_func": lambda img_path, seq: os.path.join(f"{img_path}/{seq}/images"),
         "seq_list": None,
         "full_seq": True,
@@ -23,7 +25,7 @@ def create_emdb(split):
 
 dataset_metadata = {
     "bedlam": {
-        "img_path": "/path/to/processed_bedlam",
+        "img_path": os.path.join(H3R_DATA, "processed_bedlam"),
         "dir_path_func": lambda img_path, seq: os.path.join(f"{img_path}/Test/{seq}/rgb"),
         "seq_list": None,
         "full_seq": True,
@@ -35,7 +37,7 @@ dataset_metadata = {
         "is_global": lambda split: False,
     },
     "3dpw": {
-        "img_path": "/path/to/3DPW",
+        "img_path": os.path.join(H3R_DATA, "3DPW"),
         "dir_path_func": lambda img_path, seq: os.path.join(f"{img_path}/imageFiles/{seq}"),
         "seq_list": None,
         "full_seq": True,
@@ -50,7 +52,7 @@ dataset_metadata = {
     "emdb1": create_emdb(1),
     "emdb2": create_emdb(2),
     "rich": {
-        "img_path": "/path/to/RICH",
+        "img_path": os.path.join(H3R_DATA, "RICH"),
         "dir_path_func": lambda img_path, seq: os.path.join(f"{img_path}/{seq}"),
         "seq_list": None,
         "full_seq": True,
