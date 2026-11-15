@@ -71,3 +71,10 @@
    estimated trajectory and drop the 4 `est_name=` kwargs. Label only, no effect on numbers;
    alignment / metric calls unchanged. Tested on the saved sitting_halfsphere prediction before
    resubmitting (eval + plot OK).
+3. matplotlib API (2026-11-15). requirements.txt does not pin matplotlib; env has 3.11.2, where
+   `matplotlib.cm.get_cmap` no longer exists (removed in 3.9). The first Bonn run (job 21558188)
+   crashed in `save_depth_maps -> colorize_np` with `AttributeError: module 'matplotlib.cm' has no
+   attribute 'get_cmap'`. Replaced all 8 `cm.get_cmap(cmap_name)` with `mpl.colormaps[cmap_name]`
+   (same colormap, checked numerically) in eval/video_depth/utils.py, eval/relpose/utils.py,
+   src/dust3r/viz.py, viser_utils.py. Visualisation only; metrics unaffected.
+   TUM rerun job 21559068 started on a55c18f (before this fix); its code path never calls colorize.
