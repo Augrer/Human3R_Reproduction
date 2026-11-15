@@ -34,9 +34,12 @@ orig_seq = md["get_seq_func"]
 
 def restricted(img_path, split, annots):
     # filter the annotations BEFORE the upstream loader, which lists every video's image folder
-    missing = [v for v in ours.videos if v not in annots]
-    assert not missing, f"unknown videos: {missing}"
-    seq_list, seq_to_images = orig_seq(img_path, split, {v: annots[v] for v in ours.videos})
+    # keys are per video (RICH: "test/<seq>/cam_XX") or per image (3DPW: "<seq>/image_XXXXX.jpg")
+    vids = set(ours.videos)
+    sub = {k: v for k, v in annots.items() if k in vids or k.rsplit("/", 1)[0] in vids}
+    found = {k if k in vids else k.rsplit("/", 1)[0] for k in sub}
+    assert found == vids, f"unknown videos: {sorted(vids - found)}"
+    seq_list, seq_to_images = orig_seq(img_path, split, sub)
     return seq_list, seq_to_images
 
 
