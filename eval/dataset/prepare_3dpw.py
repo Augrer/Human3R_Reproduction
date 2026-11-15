@@ -19,6 +19,7 @@ from PIL import Image, ImageFile
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'src'))
+import dust3r.utils  # REPRO: import the package first; importing dust3r.smpl_model first is a circular import (ImportError)
 from dust3r.smpl_model import SMPLX_DIR
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True # to avoid "OSError: image file is truncated"

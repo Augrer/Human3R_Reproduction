@@ -78,3 +78,9 @@
    (same colormap, checked numerically) in eval/video_depth/utils.py, eval/relpose/utils.py,
    src/dust3r/viz.py, viser_utils.py. Visualisation only; metrics unaffected.
    TUM rerun job 21559068 started on a55c18f (before this fix); its code path never calls colorize.
+4. 3DPW annotation script (2026-11-15). The documented command
+   `python -m eval.dataset.prepare_3dpw "create_annots()"` fails with `ImportError: cannot import
+   name 'SMPLX_DIR' from partially initialized module 'dust3r.smpl_model'` (circular import:
+   smpl_model -> dust3r.utils -> smpl_layer -> smpl_model). launch.py is unaffected because it
+   imports dust3r.utils first. Fix: one line `import dust3r.utils` before the smpl_model import in
+   eval/dataset/prepare_3dpw.py. No effect on the annotations.
