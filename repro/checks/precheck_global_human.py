@@ -33,10 +33,11 @@ orig_seq = md["get_seq_func"]
 
 
 def restricted(img_path, split, annots):
-    seq_list, seq_to_images = orig_seq(img_path, split, annots)
-    missing = [v for v in ours.videos if v not in seq_list]
+    # filter the annotations BEFORE the upstream loader, which lists every video's image folder
+    missing = [v for v in ours.videos if v not in annots]
     assert not missing, f"unknown videos: {missing}"
-    return list(ours.videos), seq_to_images
+    seq_list, seq_to_images = orig_seq(img_path, split, {v: annots[v] for v in ours.videos})
+    return seq_list, seq_to_images
 
 
 md["get_seq_func"] = restricted

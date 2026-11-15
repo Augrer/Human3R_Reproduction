@@ -43,7 +43,8 @@ echo "=== dinov2 hub code hash: $hubhash"
 echo "=== H3R_DATA=$H3R_DATA"
 echo "=== cmd: $*"
 
-# sample GPU memory every 5 s in the background; report the peak at the end
+# sample GPU memory every 5 s in the background; report the peak at the end.
+# Only meaningful on a full GPU: on a MIG slice nvidia-smi reports the whole physical GPU (other users).
 memlog=$(mktemp)
 nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits -l 5 > "$memlog" 2>/dev/null &
 mempid=$!
