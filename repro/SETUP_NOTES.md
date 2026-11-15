@@ -5,14 +5,14 @@
 - GPU: NVIDIA H100 PCIe, MIG slice 1g.10gb (paper used a 48 GB GPU)
 - Python 3.11 (conda env via Mamba/23.11.0-0 module, env at $PROJ/envs/human3r)
 - torch 2.5.1+cu124, torchvision 0.20.1+cu124 (pip wheels; README uses conda pytorch-cuda=12.4)
-- Full package list: notes/pip_freeze_2026-11-13.txt
+- Full package list: repro/pip_freeze_2026-11-13.txt
 
 ## Deviations from the README
 1. CUDA toolkit: no 12.4 module on Arnes, so curope (RoPE kernels) was built with
    CUDA/12.6.0 and TORCH_CUDA_ARCH_LIST="7.0;9.0" (V100S + H100).
 2. Skipped conda gcc_linux-64/gxx_linux-64; the cluster's module toolchain built everything.
 3. gsplat installed from git HEAD (README doesn't pin a commit); used --no-build-isolation.
-   Version installed: <fill in from `pip show gsplat`>
+   Version installed: gsplat 1.5.3 (from the pip freeze).
 4. xFormers not installed: DINOv2 falls back to standard attention (same results, slower).
 
 ## Repo issues found
