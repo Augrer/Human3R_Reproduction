@@ -68,3 +68,6 @@ src/*.pth
 src/models/
 src/croco/models/curope/build/
 *.so
+
+# REPRO: eval outputs live outside the repo ($PROJ/outputs/eval_results, symlinked)
+eval_results
