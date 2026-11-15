@@ -21,6 +21,8 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 | G3 | **[code] vs [paper]** The paper says "the state is reset every 100 frames". `eval/relpose/run.sh` uses `--reset_interval 100`, but `eval/video_depth/run.sh` uses `--reset_interval 1000000000` (no reset). | Run as in the scripts (which presumably produced the figures); report the mismatch; optional ablation with reset 100 on Bonn. |
 | G4 | **[paper]** The Bonn ablation table (Abs Rel, δ<1.25 next to 3DPW / EMDB-2) does not say which Bonn variant was used (110-frame `bonn` or a `bonn_N`). | Assume `bonn` (110 frames, the default in `eval_depth.py`); flag it. |
 | G5 | **[code]** Checkpoint name mismatch: the README downloads `src/human3r_896L.pth`, but `eval/relpose/run.sh` and `eval/video_depth/run.sh` load `./src/human3r.pth`. | Symlink `src/human3r.pth -> human3r_896L.pth` (gitignored); scripts unchanged. |
+| G6 | **[code]** `requirements.txt` pins only 7 of 29 packages (evo, matplotlib, torch etc. are unpinned), and the evals crash with current versions of two libraries, both only at the very end of a run: **evo** 1.38.1 (`main_ape.ape()` / `main_rpe.rpe()` no longer take `est_name=`) in TUM scoring, and **matplotlib** 3.11.2 (`cm.get_cmap` removed in 3.9) in the coloured depth maps that `video_depth/launch.py` saves before Bonn scoring. The authors' versions are unknown, so a fresh install today cannot run the published scripts unmodified. Library changes that alter numbers without crashing would go unnoticed. | Minimal `# REPRO` fixes that only touch labels and colours (SETUP_NOTES code changes 2 and 3, commits a55c18f and 452e340). Exact versions are in `pip_freeze_2026-11-13.txt`. Report as a reproducibility issue. |
+| G7 | **[code]** Both `run.sh` use `set -e` and loop over all sequence lengths, and a crash in one sequence's *visualisation* (Bonn saves a coloured depth and confidence PNG per frame as part of the eval) aborts the whole sweep, including all later sequence lengths. | Fixed the crashes rather than changing the scripts. A rerun starts from scratch (we delete the partial output dir first). |
 
 ## 2. TUM-dynamics (camera pose, `eval/relpose`)
 
@@ -68,3 +70,22 @@ these 5.
 - Derived subsets live in `data/long_tum/` and `data/long_bonn/` (one tree per dataset), not inside
   the raw sequence folders.
 - Each raw archive is kept with SHA256 checksums in `data/_archives/<dataset>/` (outside the repo).
+
+## 6. Running the evals (log)
+
+Every run: `sbatch --job-name=<name> repro/slurm/run.sbatch bash eval/<task>/run.sh`, one full
+H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the G5 symlink. Logs:
+`$PROJ/logs/<name>_<jobid>.out` (node, GPU, commit, command, runtime). Results:
+`$PROJ/outputs/eval_results/` (outside the repo, reached via the gitignored `eval_results` link).
+
+| Date | Job | Eval | Commit | Outcome |
+|---|---|---|---|---|
+| 2026-11-15 | 21558187 | TUM camera pose | 9025e2a | Crashed after the first sequence's inference (`sitting_halfsphere`, 90 frames), in scoring: evo `est_name` (G6). Runtime 23 min. |
+| 2026-11-15 | 21558188 | Bonn video depth | 9025e2a | Crashed after the first sequence's inference (`balloon2`, 110 frames), in `save_depth_maps`: matplotlib `get_cmap` (G6). Runtime 11 min. |
+| 2026-11-15 | 21559068 | TUM camera pose | a55c18f | Running. Started before the matplotlib fix, but the camera-pose path never calls `colorize`, so the results are unaffected. |
+| 2026-11-15 | 21559168 | Bonn video depth | 452e340 | Queued. |
+
+Practical observations:
+
+- **Slow cold start.** On the cluster's CephFS, a job's first reads of the conda env and checkpoint were very slow on 2026-11-15. The first TUM job needed about 25 min before inference began (Python imports at about 350 KB/s; `import trimesh, pyglet` took 123 s cold vs 1.3 s warm). It is storage, not the model. **For speed claims (paper: 15 FPS on an RTX 4090), time only the inference loop, never job wall-clock.**
+- **Pre-checks.** After two late crashes we test the scoring and visualisation code on CPU before resubmitting: TUM scoring on the saved `sitting_halfsphere` prediction (ATE 0.037 m, 90 frames; a check, not a report number) and `save_depth_maps` on fake 512×384 tensors.
