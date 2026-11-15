@@ -20,6 +20,7 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 | G2 | **[paper]** For camera pose and video depth, the paper only says "following prior works [12, 97]". Frame selection, start frame, stride and sequence lengths are not given. The results are shown as **plots over sequence length**, not tables, so the comparison has to be against read-off curve values. | Follow the code's dataset lists (`run.sh`) and the upstream preprocessing (sections 2 and 3). |
 | G3 | **[code] vs [paper]** The paper says "the state is reset every 100 frames". `eval/relpose/run.sh` uses `--reset_interval 100`, but `eval/video_depth/run.sh` uses `--reset_interval 1000000000` (no reset). | Run as in the scripts (which presumably produced the figures); report the mismatch; optional ablation with reset 100 on Bonn. |
 | G4 | **[paper]** The Bonn ablation table (Abs Rel, δ<1.25 next to 3DPW / EMDB-2) does not say which Bonn variant was used (110-frame `bonn` or a `bonn_N`). | Assume `bonn` (110 frames, the default in `eval_depth.py`); flag it. |
+| G5 | **[code]** Checkpoint name mismatch: the README downloads `src/human3r_896L.pth`, but `eval/relpose/run.sh` and `eval/video_depth/run.sh` load `./src/human3r.pth`. | Symlink `src/human3r.pth -> human3r_896L.pth` (gitignored); scripts unchanged. |
 
 ## 2. TUM-dynamics (camera pose, `eval/relpose`)
 
@@ -34,6 +35,7 @@ the same list as MonST3R's `data/download_tum_dynamics.sh`.
 | T2 | **[upstream]** `tum`: RGB frames are matched to GT poses by timestamp (TUM `associate`, max 0.02 s), then every 3rd matched frame is taken, first 90. | Unchanged. Verified that all subsets have \|t_rgb − t_gt\| < 0.02 s. |
 | T3 | **[paper]/[upstream]** `tum_N`: TTT3R's script uses stride `SAMPLE_INTERVAL = 1`, with the comment "original 3", and writes `long_tum_s1/` (TTT3R names these `tum_s1_N`). Human3R expects `long_tum/` and never states the stride. With stride 1, `tum_N` covers N/30 s of video; with stride 3, 3× longer. | **[ours]** stride 1 (current TTT3R script). Possible check: if our TTT3R baseline curve matches the one in the paper's figure, stride 1 is confirmed. |
 | T4 | **[upstream]** Several sequences are shorter than the longest N. Matched frames: sitting_static 703, walking_static 740, sitting_rpy 817, walking_xyz 857, walking_rpy 906, the rest ≥ 1064. So `tum_800` … `tum_1000` silently contain fewer frames for those sequences, and `tum_1000` is really a mix of 703–1000-frame sequences. | Unchanged; state it in the report next to the curves. |
+| T5 | **[code]** `pred_traj.txt` is written as `t x y z qw qx qy qz` (wxyz, `save_trajectory_tum_format`), but standard TUM order is `qx qy qz qw`. The metrics use the in-memory poses, so the numbers are not affected, but re-reading saved predictions with evo / TUM tools gives wrong rotations (RPE rot, plots). | Note only; when re-evaluating from files, reorder the quaternion first. |
 
 ## 3. Bonn RGB-D Dynamic (video depth, `eval/video_depth`)
 

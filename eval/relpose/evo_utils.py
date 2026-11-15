@@ -188,11 +188,12 @@ def eval_metrics(pred_traj, gt_traj=None, seq="", filename="", sample_stride=1):
     # ATE
     traj_ref = gt_traj
     traj_est = pred_traj
+    traj_est.name = "traj"  # REPRO: evo 1.38 reads the label from the trajectory
 
     ate_result = main_ape.ape(
         traj_ref,
         traj_est,
-        est_name="traj",
+        # REPRO: est_name kwarg removed (evo 1.38 API); label set on the trajectory above
         pose_relation=PoseRelation.translation_part,
         align=True,
         correct_scale=True,
@@ -209,7 +210,7 @@ def eval_metrics(pred_traj, gt_traj=None, seq="", filename="", sample_stride=1):
         rpe_rots_result = main_rpe.rpe(
             traj_ref,
             traj_est,
-            est_name="traj",
+            # REPRO: est_name kwarg removed (evo 1.38 API); label set on traj_est above
             pose_relation=PoseRelation.rotation_angle_deg,
             align=True,
             correct_scale=True,
@@ -226,7 +227,7 @@ def eval_metrics(pred_traj, gt_traj=None, seq="", filename="", sample_stride=1):
         rpe_transs_result = main_rpe.rpe(
             traj_ref,
             traj_est,
-            est_name="traj",
+            # REPRO: est_name kwarg removed (evo 1.38 API); label set on traj_est above
             pose_relation=PoseRelation.translation_part,
             align=True,
             correct_scale=True,
@@ -308,10 +309,11 @@ def eval_metrics_first_pose_align_last_pose(
             poses_se3=[pred_traj.poses_se3[-1]], timestamps=[pred_traj.timestamps[-1]]
         )
 
+    pred_traj.name = "traj"  # REPRO: evo 1.38 reads the label from the trajectory
     ate_result = main_ape.ape(
         gt_traj,
         pred_traj,
-        est_name="traj",
+        # REPRO: est_name kwarg removed (evo 1.38 API); label set on the trajectory above
         pose_relation=PoseRelation.translation_part,
         align=False,  # <-- important
         correct_scale=False,  # <-- important

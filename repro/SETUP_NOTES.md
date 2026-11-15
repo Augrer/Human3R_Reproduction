@@ -64,3 +64,10 @@
    (fixes the inconsistent Bonn roots, REPRO_NOTES B1); sintel -> $H3R_DATA/sintel/training/...
    Not changed: docs/, usage strings, config/trian_human3r.yaml + preprocess_bedlam.py (training).
    Verified: tum (8x90), tum_1000, bonn (5x110), bonn_500 resolve with frames + GT present.
+2. evo API (2026-11-15). requirements.txt does not pin `evo`; pip installed 1.38.1, whose
+   `main_ape.ape()` / `main_rpe.rpe()` no longer accept `est_name=` (the label is read from
+   `traj.name`). The first TUM run (job 21558187) crashed with `TypeError: ape() got an unexpected
+   keyword argument 'est_name'`. Fix in eval/relpose/evo_utils.py: set `.name = "traj"` on the
+   estimated trajectory and drop the 4 `est_name=` kwargs. Label only, no effect on numbers;
+   alignment / metric calls unchanged. Tested on the saved sitting_halfsphere prediction before
+   resubmitting (eval + plot OK).
