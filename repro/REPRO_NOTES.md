@@ -19,8 +19,8 @@ Claim list follows the 2026-11-15 Fable review (file not yet in the repo); C1/C2
 
 | # | Claim (paper) | Status | Evidence / plan |
 |---|---|---|---|
-| C1 | Local human mesh, Table 1: 3DPW 44.1 / 71.2 / 84.9 and EMDB-1 48.5 / 73.9 / 86.0 (PA-MPJPE / MPJPE / PVE, mm) | ⏳ 3DPW · ⛔ EMDB-1 | 3DPW job 21592963 (all 24 seqs). EMDB access requested 2026-11-12. |
-| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ⏳ RICH · ⛔ EMDB-2 | RICH as 4 parts (21592959–62), merged with upstream averaging (G15, G16). |
+| C1 | Local human mesh, Table 1: 3DPW 44.1 / 71.2 / 84.9 and EMDB-1 48.5 / 73.9 / 86.0 (PA-MPJPE / MPJPE / PVE, mm) | ≈ 3DPW (0.5–1.7 mm above paper) · ⛔ EMDB-1 | 3DPW job 21592963 (all 24 seqs): 44.6 / 72.8 / 86.6, section 7; gap not yet explained (G18). EMDB access requested 2026-11-12. |
+| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ⏳ RICH · ⛔ EMDB-2 | RICH as 4 parts, merged with upstream averaging (G15, G16). Parts 1–3 done (143/191 videos); part 0 failed in staging and was resubmitted 2026-11-16 (section 6). |
 | C3 | Camera pose, Fig. 9a: Human3R ATE on TUM-D, lower than TTT3R and CUT3R | ✅ Human3R curve · 🔜 comparison | Section 7: all 12 lengths match. Baseline curves not yet run. |
 | C4 | Video depth, Fig. 9b and Table 10: Bonn metric-scale Abs Rel / δ<1.25 | ✅ Human3R curve and Table 10 · 🔜 comparison | Section 7: all 10 lengths match; Table 10 = `bonn_100` metric exactly (G4). |
 | C5 | Real-time: 15 FPS on an RTX 4090, 8 GB, speed independent of the number of people | 🔜 partly | 15 FPS is the ViT-S/672 model (G9), not downloaded yet; no 4090 here, report H100 inference-only timing (G16). People-count dependence: CMU Panoptic extension. |
@@ -48,8 +48,9 @@ Claim list follows the 2026-11-15 Fable review (file not yet in the repo); C1/C2
 | G13 | **[code]** The eval summary (`get_summary_log`, `global_human/utils.py`) labels the global metrics "(cm)". The code computes W-/WA-MPJPE in **mm** (`m2mm = 1000`), RTE in **%** (root error after rigid alignment without scale, divided by the total GT displacement, × 100), jitter in 10 m/s³ (÷ 10) and foot sliding in mm, which matches the paper's text (Sec. 4.2: mm; RTE in %). | **Resolved (2026-11-16):** cosmetic label error only; report mm / %. |
 | G14 | **[code]** The 3DPW preparation command given in `docs/eval.md` does not run as published (circular import in `prepare_3dpw.py`, job 21562622). Together with G1, G5, G6 this means none of the documented eval paths ran unmodified on a fresh install. | One-line import-order fix (SETUP_NOTES code change 4). |
 | G15 | **[code]** `global_human/launch.py` computes its final numbers from **every `.txt` file in the output folder** (`process_directory`: n_human-weighted mean over all per-video lines), and per-video lines are appended, never overwritten. Re-running into an existing output folder therefore counts earlier videos twice. | Always use a fresh output folder; partial folders are renamed, not reused. Split runs are merged with the same upstream functions (`repro/merge_global_human.py`), which gives the same number as one run. |
-| G16 | **[ours] compute** The human-mesh evals were bound by image reading, not the GPU: `launch.py` reads a video's images one at a time, which on our CephFS ran at ~4 images/s (GPU at 0 %). RICH (106k frames) would have needed ~29 h; 3DPW hit its 4 h limit after 18/24 sequences. 32 parallel readers gave ~25 images/s. | Jobs copy their images to node-local disk first (`repro/slurm/stage_local.sh`, data unchanged, `H3R_DATA` points at the copy); RICH runs as 4 jobs over fixed video lists (`repro/splits/rich_chunk*.txt`) and is merged. Report staging and inference time separately. |
+| G16 | **[ours] compute** The human-mesh evals were bound by image reading, not the GPU: `launch.py` reads a video's images one at a time, which on our CephFS ran at ~4 images/s (GPU at 0 %). RICH (106k frames) would have needed ~29 h; 3DPW hit its 4 h limit after 18/24 sequences. 32 parallel readers gave ~25 images/s. | Jobs copy their images to node-local disk first (`repro/slurm/stage_local.sh`, data unchanged, `H3R_DATA` points at the copy); RICH runs as 4 jobs over fixed video lists (`repro/splits/rich_chunk*.txt`) and is merged. Report staging and inference time separately. Staging takes 4–5 min (2.1 GB for 3DPW, 51–54 GB per RICH part). Bug fixed 2026-11-16: the parallel `cp --parents` calls raced on creating shared parent folders (`cannot make directory …: File exists`, job 21592959). The script now creates the directory tree first. |
 | G17 | **[ours] hardware** MIG 1g.10gb vs full H100 (job 21596637 vs 21559168, `bonn_50`, same commit code, same checkpoint): depth maps **not bit-identical** (median relative pixel difference 1.1e-4, p99 4.2e-3; 0.35 % of pixels > 1 %, likely depth edges), growing along the sequence (≈3e-5 at frame 0 → 2–8e-4 at frame 50) as the recurrent state accumulates float differences. Metrics agree to ≤ 1.2e-4 (scale Abs Rel 0.076907 vs 0.076882; metric 0.084595 vs 0.084592; metric δ<1.25 0.95395 vs 0.95407). | Headline numbers on full H100 only. MIG allowed for ablations if all compared variants run on MIG, labelled. Still open: H100 run-to-run repeatability and drift on long sequences (`bonn_500`). |
+| G18 | **[ours] result** 3DPW (job 21592963) is consistently a little above Table 1: PA-MPJPE 44.6 vs 44.1, MPJPE 72.8 vs 71.2, PVE 86.6 vs 84.9 mm. TUM and Bonn reproduce to the last digit with the same checkpoint and environment, so a small 3DPW-specific difference is likely. Candidates (unchecked): our `prepare_3dpw` annotations (G14: the published prep command needed fixes), the frame set, or `run.sh` arguments. | Open. Report as is with the gap; check the annotation file against upstream's description before calling it reproduced. |
 
 ## 2. TUM-dynamics (camera pose, `eval/relpose`)
 
@@ -117,6 +118,10 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-16 | 21592959–62 | RICH, 4 parts (`repro/splits/rich_chunk{0..3}.txt`, 47–48 videos / ~26.6k frames each), staged to local disk, `precheck_global_human.py` harness without `--max_frames` (full videos), `run_rich.sh` arguments | 42a2d62 | Submitted 11:40, H100, 8 h each. Merge with `repro/merge_global_human.py --expect 191`. |
 | 2026-11-16 | 21592963 | 3DPW, all 24 sequences, fresh output folder, staged to local disk, `run.sh` arguments | 42a2d62 | Submitted 11:40, H100, 8 h. |
 | 2026-11-16 | 21596637 | MIG equivalence check: `bonn_50` (`video_depth/run.sh` args) on MIG 1g.10gb | f6aa318 | Done, 25 min. Not bit-identical, metrics within 1.2e-4 (G17). Output `eval_results/mig_check/`. |
+| 2026-11-16 | 21592959 | RICH part 0 | 42a2d62 | **Failed** after 4 min (exit 123), before inference: staging race in `stage_local.sh` (G16). No output folder created. Resubmitted after the fix (below). |
+| 2026-11-16 | 21592960–62 | RICH parts 1–3 | 42a2d62 | **Done**, exit 0, 165 / 158 / 160 min, H100 SXM (gwn10), 47 + 48 + 48 videos, no OOM or exception lines. Staging 233–283 s each, peak GPU memory 7.6 GB. Per-part numbers are not report numbers (merge pending part 0). |
+| 2026-11-16 | 21592963 | 3DPW | 42a2d62 | **Done**, exit 0, 165 min, H100 SXM (gwn10), 24/24 sequences, no OOM or exception lines. Staging 222 s, peak GPU memory 7.7 GB. Result in section 7 (G18). |
+| 2026-11-16 | 21597188 | MIG drift check: `bonn_500` (`video_depth/run.sh` args) on MIG 1g.10gb | 1db8a89 | Inference **done** for 5/5 sequences (47 min); then **OOM in `eval_depth.py`** (`depth_evaluation`, 10 GB slice). Depth maps are kept in `eval_results/mig_check/bonn_500_human3r/`; only the scoring is rerun on a bigger GPU (below). |
 
 Practical observations:
 
@@ -127,6 +132,19 @@ Practical observations:
 - **RICH pre-check (2026-11-15, job 21561273, commit 92a56d7, MIG 1g.10gb):** `repro/checks/precheck_global_human.py` on `LectureHall_019_wipingchairs1/cam_00`, first 250 frames, same args as `run_rich.sh`. Full pipeline ran (load, inference, matching, metrics, logs) in 8 min; recall 100%. Crash test only, not report numbers.
 
 ## 7. Results
+
+### 3DPW local human mesh (job 21592963; Table 1)
+
+All 24 test sequences, `run.sh` arguments, mm, n_human-weighted mean (upstream `launch.py`).
+
+| | PA-MPJPE | MPJPE | PVE | PA-PVE |
+|---|---|---|---|---|
+| Ours | 44.6 | 72.8 | 86.6 | 60.6 |
+| Paper Table 1 | 44.1 | 71.2 | 84.9 | – |
+| Difference | +0.5 | +1.6 | +1.7 | |
+
+Detection: precision 70.0 %, recall 98.9 %, F1 79.0 %. Global metrics are 0 for 3DPW (not evaluated upstream).
+**Close but not exact** (G18); open until the annotations are checked.
 
 ### TUM-dynamics camera pose (job 21559068; Fig. 9a)
 

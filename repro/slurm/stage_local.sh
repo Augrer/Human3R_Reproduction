@@ -21,6 +21,9 @@ trap 'rm -rf "$(dirname "$DST")"' EXIT
 t0=$(date +%s)
 cd "$SRC"
 for p in "${paths[@]}"; do [ -e "$p" ] || { echo "missing: $SRC/$p"; exit 1; }; done
+# Create the directory tree first: parallel `cp --parents` calls race on mkdir of shared parent
+# folders ("cannot make directory ...: File exists", job 21592959).
+find "${paths[@]}" -type d -print0 | (cd "$DST" && xargs -0 mkdir -p)
 find "${paths[@]}" -type f -print0 | xargs -0 -P 32 -n 64 cp --parents -t "$DST"
 n_src=$(find "${paths[@]}" -type f | wc -l); n_dst=$(cd "$DST" && find "${paths[@]}" -type f | wc -l)
 [ "$n_src" = "$n_dst" ] || { echo "STAGING INCOMPLETE: $n_dst of $n_src files"; exit 1; }
