@@ -12,6 +12,43 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 
 ---
 
+## ⚑ Open items to check
+
+Flagged issues that must be resolved, or explicitly reported as open, before the report. Details in the linked G-item.
+
+### ⚑ F1: 3DPW numbers above Table 1 (unexplained), see G18 (flagged 2026-11-16)
+
+Job 21592963 (commit 42a2d62, H100 SXM, released `human3r_896L.pth`, all 24 sequences, 35,080 matched people):
+
+| mm | PA-MPJPE | MPJPE | PVE |
+|---|---|---|---|
+| Ours | 44.6 | 72.8 | 86.6 |
+| Paper Table 1 | 44.1 | 71.2 | 84.9 |
+| Gap | +0.5 | +1.6 | +1.7 |
+
+Pose is nearly identical (small PA gap); most of the difference is in size / scale (root-aligned metrics). TUM and Bonn reproduce to the last digit with the same environment and checkpoint, so the cause is specific to the human branch or to 3DPW.
+
+**Ruled out**
+- GT set: 24 sequences, 24,547 frames, 35,515 person-frames (standard 3DPW test size); prep = upstream + import fix only (G14).
+- Protocol: 14 H36M joints as in "3DPW (14)"; full sequences; `run.sh` arguments (reset 100, size 512, TTT3R).
+- DINOv2 torch-hub drift: no ViT-L forward change since 2024 (checked the dinov2 git history).
+- Upstream female-GT indexing bug in `SMPLModel.forward_smpl`: never triggers, because all 3DPW test subjects are labelled `m` in the official files.
+- Precision / framework: fp32 inference; torch 2.5.1 as the authors used.
+
+**Still open**
+- [ ] Run-to-run repeatability: identical H100 rerun (~2.75 h). If it moves ~1 mm, the gap is noise. (Also closes the G17 repeatability question.)
+- [ ] GPU-numerics sensitivity: rerun with TF32 off (`croco.py` enables TF32 matmuls at import; H100 and the authors' RTX 4090 round differently). Optionally with xFormers (not installed here, so DINOv2 uses plain attention).
+- [ ] Checkpoint identity: is the released checkpoint the one behind Table 1? Only the authors can answer (possible comment on upstream issue #11; not posted).
+- [ ] Re-check after RICH is merged: if RICH is also systematically worse, that points to the human branch, not 3DPW.
+
+**Not usable as reference:** upstream issue #4 (44.3 / 71.9 / 85.7), whose 60,838 "Total Humans" vs our 35,080 indicates a contaminated output folder (G15).
+
+### ⚑ F2: Other open items (short)
+- [ ] RICH: merge parts 0–3 once job 21612586 finishes (`merge_global_human.py --expect 191`), then compare with Table 2.
+- [ ] G17: score the MIG `bonn_500` depth maps (job 21612587) and compare with H100 job 21559168 (drift on long sequences).
+
+---
+
 ## 0. Paper claims and what we test
 
 Status as of 2026-11-16. ✅ reproduced · ⏳ running/queued · 🔜 planned · ⛔ blocked · ✗ not testable by us.
