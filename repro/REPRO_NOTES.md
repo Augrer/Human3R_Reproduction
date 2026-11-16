@@ -96,6 +96,8 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-15 | 21568115 | RICH global motion (`run_rich.sh`, 191 videos) | 52fc487 | Submitted 18:24 via `submit.sh` (snapshot `runs/rich_eval_52fc487_…`), H100, 20 h limit. |
 | 2026-11-15 | 21569212 | 3DPW local mesh (`launch.py` with the `run.sh` arguments, `--eval_dataset 3dpw` only; `run.sh` would continue to EMDB-1, which we lack) | 3e97ce8 | Submitted 19:07 via `submit.sh`, H100, 4 h limit. Annotations: `3dpw_test.pkl` (24 seqs, 24,547 frames; job 21563583). Pre-check 21568279 passed. |
 | 2026-11-15 | 21569212 (3DPW) / 21568115 (RICH) | | | **3DPW: TIMEOUT** at 4 h after 18/24 sequences; **RICH: cancelled** after 1 h 05 min (4/191 videos; projected ~29 h). Cause: G16. Partial folders kept as `3dpw_human3r_timeout_21569212` and `rich_human3r_cancelled_21568115` (not used for results). |
+| 2026-11-16 | 21592959–62 | RICH, 4 parts (`repro/splits/rich_chunk{0..3}.txt`, 47–48 videos / ~26.6k frames each), staged to local disk, `precheck_global_human.py` harness without `--max_frames` (full videos), `run_rich.sh` arguments | 42a2d62 | Submitted 11:5x, H100, 8 h each. Merge with `repro/merge_global_human.py --expect 191`. |
+| 2026-11-16 | 21592963 | 3DPW, all 24 sequences, fresh output folder, staged to local disk, `run.sh` arguments | 42a2d62 | Submitted 11:5x, H100, 8 h. |
 
 Practical observations:
 
