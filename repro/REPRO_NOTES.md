@@ -122,6 +122,8 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-16 | 21592960–62 | RICH parts 1–3 | 42a2d62 | **Done**, exit 0, 165 / 158 / 160 min, H100 SXM (gwn10), 47 + 48 + 48 videos, no OOM or exception lines. Staging 233–283 s each, peak GPU memory 7.6 GB. Per-part numbers are not report numbers (merge pending part 0). |
 | 2026-11-16 | 21592963 | 3DPW | 42a2d62 | **Done**, exit 0, 165 min, H100 SXM (gwn10), 24/24 sequences, no OOM or exception lines. Staging 222 s, peak GPU memory 7.7 GB. Result in section 7 (G18). |
 | 2026-11-16 | 21597188 | MIG drift check: `bonn_500` (`video_depth/run.sh` args) on MIG 1g.10gb | 1db8a89 | Inference **done** for 5/5 sequences (47 min); then **OOM in `eval_depth.py`** (`depth_evaluation`, 10 GB slice). Depth maps are kept in `eval_results/mig_check/bonn_500_human3r/`; only the scoring is rerun on a bigger GPU (below). |
+| 2026-11-16 | 21612586 | RICH part 0 resubmitted (same command and arguments as parts 1–3, fresh output folder `rich_human3r_part0`) | cb31dfa | Submitted 22:50, H100, 8 h. Code differs from 42a2d62 only in `stage_local.sh` and notes, so the eval code is identical to parts 1–3. After it finishes: `merge_global_human.py --expect 191` over the 4 parts. |
+| 2026-11-16 | 21612587 | `bonn_500` MIG drift check, scoring only: `eval_depth.py --align scale` and `--align metric` on the MIG depth maps from 21597188 | cb31dfa | Submitted 22:50, V100S 32 GB (scoring only; the depth maps stay MIG-made), 2 h. Compare with the H100 `bonn_500` from 21559168 (G17). |
 
 Practical observations:
 
