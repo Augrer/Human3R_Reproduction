@@ -12,6 +12,23 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 
 ---
 
+## 0. Paper claims and what we test
+
+Status as of 2026-11-16. ✅ reproduced · ⏳ running/queued · 🔜 planned · ⛔ blocked · ✗ not testable by us.
+Claim list follows the 2026-11-15 review (notes/reviews); numbers checked against the PDF.
+
+| # | Claim (paper) | Status | Evidence / plan |
+|---|---|---|---|
+| C1 | Local human mesh, Table 1: 3DPW 44.1 / 71.2 / 84.9 and EMDB-1 48.5 / 73.9 / 86.0 (PA-MPJPE / MPJPE / PVE, mm) | ⏳ 3DPW · ⛔ EMDB-1 | 3DPW job 21592963 (all 24 seqs). EMDB access requested 2026-11-12. |
+| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ⏳ RICH · ⛔ EMDB-2 | RICH as 4 parts (21592959–62), merged with upstream averaging (G15, G16). |
+| C3 | Camera pose, Fig. 9a: Human3R ATE on TUM-D, lower than TTT3R and CUT3R | ✅ Human3R curve · 🔜 comparison | Section 7: all 12 lengths match. Baseline curves not yet run. |
+| C4 | Video depth, Fig. 9b and Table 10: Bonn metric-scale Abs Rel / δ<1.25 | ✅ Human3R curve and Table 10 · 🔜 comparison | Section 7: all 10 lengths match; Table 10 = `bonn_100` metric exactly (G4). |
+| C5 | Real-time: 15 FPS on an RTX 4090, 8 GB, speed independent of the number of people | 🔜 partly | 15 FPS is the ViT-S/672 model (G9), not downloaded yet; no 4090 here, report H100 inference-only timing (G16). People-count dependence: CMU Panoptic extension. |
+| C6 | Training: 1 day on one 48 GB GPU, BEDLAM, CUT3R and Multi-HMR frozen | ✗ for now | Needs BEDLAM + retraining; scope decision pending. |
+| C7 | Ablations (Tables 3, 8–11) | 🔜 partly | Backbone / resolution: the four released checkpoints (inference only). "w/o TTT3R": drop the flag. Naive CUT3R+Multi-HMR baseline: code path `--is_naive`, needs CUT3R and Multi-HMR weights and an undocumented config. "w/o prior", cross-attention, joint decoder: need retraining. |
+| C8 | Robust to crowds, tracking, truncation | ✗ in paper (qualitative only) → 🔜 extension | CMU Panoptic crowd protocol (notes/extension_ideas.md). |
+| C9 | "Mutual benefit": human prompt tuning also improves scene reconstruction | 🔜 | Needs TTT3R / CUT3R baselines on our subsets and the reset control (G10). |
+
 ## 1. General
 
 | # | Observation | Our handling |
@@ -28,7 +45,7 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 | G10 | **[ours] hypothesis, untested** In Fig. 9a, Human3R and TTT3R appear to coincide up to 100 frames and separate from 150, where the first state reset takes effect; on Bonn (no reset) they differ by ≤ ~0.003 Abs Rel. The TUM gain attributed to human prompt tuning ("mutual benefit") may partly come from the reset. | Planned control: TUM and Bonn with reset 100 vs none, with and without TTT3R, plus TTT3R/CUT3R baselines under the same subsets. |
 | G11 | **[paper]** Not stated in the paper, only in code/config: the dataset behind Table 9, Fig. 12 and Table 11 (code suggests the BEDLAM test split); the human detection threshold (0.3 per review, unverified) and 2D matching (greedy, IoU ≥ 0.05, `global_human/utils.py`); training settings (40 epochs × 4000 samples, weight decay 0.05, 5 warm-up epochs, seed 0, per review of the config). | Cite the code values in the report. |
 | G12 | **[code]** `global_human/launch.py` catches out-of-memory errors (and "Degenerate covariance rank" / "Eigenvalues did not converge") per sequence, writes one line to `_error_log_*.txt`, and **continues**; the final averages are taken over the remaining sequences. A video that runs out of memory (more likely for long RICH / EMDB videos with no reset) silently drops out of the reported number. | After every global-human run, grep the error logs for `OOM` / `Exception` and report the number of evaluated videos (RICH: 191 expected). |
-| G13 | **[code], to verify** The eval summary (`get_summary_log`, `global_human/utils.py`) labels the global metrics "(cm)", but our RICH pre-check gives WA-MPJPE 84.4 / W-MPJPE 132.3, the same scale as the paper's 110.0 / 184.9 **mm** (Table 2). Most likely a label error (GVHMR-style metrics in mm; RTE in %). | Check the conversion factors in the metric code before quoting units in the report. |
+| G13 | **[code]** The eval summary (`get_summary_log`, `global_human/utils.py`) labels the global metrics "(cm)". The code computes W-/WA-MPJPE in **mm** (`m2mm = 1000`), RTE in **%** (root error after rigid alignment without scale, divided by the total GT displacement, × 100), jitter in 10 m/s³ (÷ 10) and foot sliding in mm, which matches the paper's text (Sec. 4.2: mm; RTE in %). | **Resolved (2026-11-16):** cosmetic label error only; report mm / %. |
 | G14 | **[code]** The 3DPW preparation command given in `docs/eval.md` does not run as published (circular import in `prepare_3dpw.py`, job 21562622). Together with G1, G5, G6 this means none of the documented eval paths ran unmodified on a fresh install. | One-line import-order fix (SETUP_NOTES code change 4). |
 | G15 | **[code]** `global_human/launch.py` computes its final numbers from **every `.txt` file in the output folder** (`process_directory`: n_human-weighted mean over all per-video lines), and per-video lines are appended, never overwritten. Re-running into an existing output folder therefore counts earlier videos twice. | Always use a fresh output folder; partial folders are renamed, not reused. Split runs are merged with the same upstream functions (`repro/merge_global_human.py`), which gives the same number as one run. |
 | G16 | **[ours] compute** The human-mesh evals were bound by image reading, not the GPU: `launch.py` reads a video's images one at a time, which on our CephFS ran at ~4 images/s (GPU at 0 %). RICH (106k frames) would have needed ~29 h; 3DPW hit its 4 h limit after 18/24 sequences. 32 parallel readers gave ~25 images/s. | Jobs copy their images to node-local disk first (`repro/slurm/stage_local.sh`, data unchanged, `H3R_DATA` points at the copy); RICH runs as 4 jobs over fixed video lists (`repro/splits/rich_chunk*.txt`) and is merged. Report staging and inference time separately. |
