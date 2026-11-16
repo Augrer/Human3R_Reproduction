@@ -15,7 +15,7 @@ code/paper mismatch · **[upstream]** behaviour inherited from MonST3R / TTT3R /
 ## 0. Paper claims and what we test
 
 Status as of 2026-11-16. ✅ reproduced · ⏳ running/queued · 🔜 planned · ⛔ blocked · ✗ not testable by us.
-Claim list follows the 2026-11-15 review (notes/reviews); numbers checked against the PDF.
+Claim list follows the 2026-11-15 Fable review (file not yet in the repo); C1/C2 numbers checked against the PDF, ablation table numbering (C7) not yet re-checked.
 
 | # | Claim (paper) | Status | Evidence / plan |
 |---|---|---|---|
