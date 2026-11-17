@@ -39,13 +39,14 @@ Pose is nearly identical (small PA gap); most of the difference is in size / sca
 - [ ] Run-to-run repeatability: identical H100 rerun (~2.75 h). If it moves ~1 mm, the gap is noise. (Also closes the G17 repeatability question.)
 - [ ] GPU-numerics sensitivity: rerun with TF32 off (`croco.py` enables TF32 matmuls at import; H100 and the authors' RTX 4090 round differently). Optionally with xFormers (not installed here, so DINOv2 uses plain attention).
 - [ ] Checkpoint identity: is the released checkpoint the one behind Table 1? Only the authors can answer (possible comment on upstream issue #11; not posted).
-- [ ] Re-check after RICH is merged: if RICH is also systematically worse, that points to the human branch, not 3DPW.
+- [x] Re-check after RICH is merged (2026-11-17): RICH reproduces Table 2 (110.0 / 184.4 / 3.3 vs 110.0 / 184.9 / 3.3), so the human branch as a whole reproduces; the gap looks 3DPW-specific (e.g. the multi-person matching or the 3DPW GT path, `forward_smpl` 3DPW branch / H36M regressor, used only by 3DPW).
 
 **Not usable as reference:** upstream issue #4 (44.3 / 71.9 / 85.7), whose 60,838 "Total Humans" vs our 35,080 indicates a contaminated output folder (G15).
 
 ### ⚑ F2: Other open items (short)
-- [ ] RICH: merge parts 0–3 once job 21612586 finishes (`merge_global_human.py --expect 191`), then compare with Table 2.
-- [ ] G17: score the MIG `bonn_500` depth maps (job 21612587) and compare with H100 job 21559168 (drift on long sequences).
+- [x] RICH: merged 2026-11-17, 191/191 videos, matches Table 2 (section 7).
+- [x] G17: MIG `bonn_500` scored (job 21612587); drift grows with length but stays at the last reported digit (G17).
+- [ ] G17: H100 run-to-run repeatability still untested (same rerun as F1).
 
 ---
 
@@ -57,7 +58,7 @@ Claim list follows the 2026-11-15 Fable review (file not yet in the repo); C1/C2
 | # | Claim (paper) | Status | Evidence / plan |
 |---|---|---|---|
 | C1 | Local human mesh, Table 1: 3DPW 44.1 / 71.2 / 84.9 and EMDB-1 48.5 / 73.9 / 86.0 (PA-MPJPE / MPJPE / PVE, mm) | ≈ 3DPW (0.5–1.7 mm above paper) · ⛔ EMDB-1 | 3DPW job 21592963 (all 24 seqs): 44.6 / 72.8 / 86.6, section 7; gap not yet explained (G18). EMDB access requested 2026-11-12. |
-| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ⏳ RICH · ⛔ EMDB-2 | RICH as 4 parts, merged with upstream averaging (G15, G16). Parts 1–3 done (143/191 videos); part 0 failed in staging and was resubmitted 2026-11-16 (section 6). |
+| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ✅ RICH · ⛔ EMDB-2 | RICH as 4 parts, merged with upstream averaging (G15, G16). All 4 parts done and merged (191/191 videos): **110.0 / 184.4 / 3.3**, section 7. |
 | C3 | Camera pose, Fig. 9a: Human3R ATE on TUM-D, lower than TTT3R and CUT3R | ✅ Human3R curve · 🔜 comparison | Section 7: all 12 lengths match. Baseline curves not yet run. |
 | C4 | Video depth, Fig. 9b and Table 10: Bonn metric-scale Abs Rel / δ<1.25 | ✅ Human3R curve and Table 10 · 🔜 comparison | Section 7: all 10 lengths match; Table 10 = `bonn_100` metric exactly (G4). |
 | C5 | Real-time: 15 FPS on an RTX 4090, 8 GB, speed independent of the number of people | 🔜 partly | 15 FPS is the ViT-S/672 model (G9), not downloaded yet; no 4090 here, report H100 inference-only timing (G16). People-count dependence: CMU Panoptic extension. |
@@ -86,7 +87,7 @@ Claim list follows the 2026-11-15 Fable review (file not yet in the repo); C1/C2
 | G14 | **[code]** The 3DPW preparation command given in `docs/eval.md` does not run as published (circular import in `prepare_3dpw.py`, job 21562622). Together with G1, G5, G6 this means none of the documented eval paths ran unmodified on a fresh install. | One-line import-order fix (SETUP_NOTES code change 4). |
 | G15 | **[code]** `global_human/launch.py` computes its final numbers from **every `.txt` file in the output folder** (`process_directory`: n_human-weighted mean over all per-video lines), and per-video lines are appended, never overwritten. Re-running into an existing output folder therefore counts earlier videos twice. | Always use a fresh output folder; partial folders are renamed, not reused. Split runs are merged with the same upstream functions (`repro/merge_global_human.py`), which gives the same number as one run. |
 | G16 | **[ours] compute** The human-mesh evals were bound by image reading, not the GPU: `launch.py` reads a video's images one at a time, which on our CephFS ran at ~4 images/s (GPU at 0 %). RICH (106k frames) would have needed ~29 h; 3DPW hit its 4 h limit after 18/24 sequences. 32 parallel readers gave ~25 images/s. | Jobs copy their images to node-local disk first (`repro/slurm/stage_local.sh`, data unchanged, `H3R_DATA` points at the copy); RICH runs as 4 jobs over fixed video lists (`repro/splits/rich_chunk*.txt`) and is merged. Report staging and inference time separately. Staging takes 4–5 min (2.1 GB for 3DPW, 51–54 GB per RICH part). Bug fixed 2026-11-16: the parallel `cp --parents` calls raced on creating shared parent folders (`cannot make directory …: File exists`, job 21592959). The script now creates the directory tree first. |
-| G17 | **[ours] hardware** MIG 1g.10gb vs full H100 (job 21596637 vs 21559168, `bonn_50`, same commit code, same checkpoint): depth maps **not bit-identical** (median relative pixel difference 1.1e-4, p99 4.2e-3; 0.35 % of pixels > 1 %, likely depth edges), growing along the sequence (≈3e-5 at frame 0 → 2–8e-4 at frame 50) as the recurrent state accumulates float differences. Metrics agree to ≤ 1.2e-4 (scale Abs Rel 0.076907 vs 0.076882; metric 0.084595 vs 0.084592; metric δ<1.25 0.95395 vs 0.95407). | Headline numbers on full H100 only. MIG allowed for ablations if all compared variants run on MIG, labelled. Still open: H100 run-to-run repeatability and drift on long sequences (`bonn_500`). |
+| G17 | **[ours] hardware** MIG 1g.10gb vs full H100 (job 21596637 vs 21559168, `bonn_50`, same commit code, same checkpoint): depth maps **not bit-identical** (median relative pixel difference 1.1e-4, p99 4.2e-3; 0.35 % of pixels > 1 %, likely depth edges), growing along the sequence (≈3e-5 at frame 0 → 2–8e-4 at frame 50) as the recurrent state accumulates float differences. Metrics agree to ≤ 1.2e-4 (scale Abs Rel 0.076907 vs 0.076882; metric 0.084595 vs 0.084592; metric δ<1.25 0.95395 vs 0.95407). | Headline numbers on full H100 only. MIG allowed for ablations if all compared variants run on MIG, labelled. **`bonn_500` (2026-11-17, MIG job 21597188 inference, scored on V100S job 21612587):** differences grow with length but stay at the reported precision: scale Abs Rel 0.07603 vs 0.07648 (−4.5e-4), metric Abs Rel 0.09869 vs 0.09883 (−1.4e-4), metric δ<1.25 92.66 vs 92.78 % (−0.12 pp); at the paper's rounding only the δ last digit can flip. Scoring of `bonn_500` needs ~25 GB GPU memory (OOM on the 10 GB slice). Still open: H100 run-to-run repeatability. |
 | G18 | **[ours] result** 3DPW (job 21592963) is consistently a little above Table 1: PA-MPJPE 44.6 vs 44.1, MPJPE 72.8 vs 71.2, PVE 86.6 vs 84.9 mm. The gap is smallest after Procrustes alignment (+0.5) and larger on root-aligned MPJPE / PVE (+1.6 / +1.7), so pose is near-identical and the difference sits mostly in size / scale. **Checked and ruled out (2026-11-16):** (a) GT set: our `3dpw_test.pkl` has 24 sequences, 24,547 frames, **35,515 person-frames** (the standard 3DPW test count); our prep differs from upstream only by the import fix (G14). (b) Protocol: 14 H36M joints (`J_regressor_h36m`), matching "3DPW (14)" in Table 1; full sequences, subsample 1, `run.sh` arguments; the paper gives nothing more ("following [3, 100]"). (c) DINOv2 torch-hub code (unpinned, we got HEAD 7764ea0 of 2026-06-03): no change to the ViT-L forward pass since 2024; the 2024 interpolation fix (e1277af) gives identical output with the default `interpolate_offset=0.1`. (d) Gender handling: `SMPLModel.forward_smpl` has a female-GT indexing bug for 3DPW (index from `torch.where(...)[1]` is the person slot, used on the flattened person list), but it never triggers: **all 3DPW test subjects are labelled `m`** in the official sequence files (train / validation do have `f`). (e) Precision: eval inference is fp32 (autocast disabled); torch 2.5.1 as tested by the authors (upstream issue #3). **Reference point:** upstream issue #4 (Oct 2025) posts a released-checkpoint 3DPW run on an A6000: 44.3 / 71.9 / 85.7, precision 71.1, recall 98.8, but with "Total Humans: 60838" vs our 35,080. That suggests their folder mixed a crashed multi-GPU attempt with the single-GPU run (the G15 effect), so it is not a clean reference. Upstream issue #11 (retraining gap) was answered with "GPU model, random seeds". **Remaining candidates:** GPU-dependent numerics (`croco.py` sets `torch.backends.cuda.matmul.allow_tf32 = True` at import, so H100 and RTX 4090 both run TF32 matmuls with hardware-specific rounding; no xFormers here, so DINOv2 uses plain attention), run-to-run nondeterminism, or a released checkpoint that differs from the one behind Table 1. | Open. Report as is with the gap and this list. Next tests: an identical H100 rerun (repeatability, also G17) and a TF32-off or other-GPU run (sensitivity). |
 
 ## 2. TUM-dynamics (camera pose, `eval/relpose`)
@@ -161,6 +162,9 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-16 | 21597188 | MIG drift check: `bonn_500` (`video_depth/run.sh` args) on MIG 1g.10gb | 1db8a89 | Inference **done** for 5/5 sequences (47 min); then **OOM in `eval_depth.py`** (`depth_evaluation`, 10 GB slice). Depth maps are kept in `eval_results/mig_check/bonn_500_human3r/`; only the scoring is rerun on a bigger GPU (below). |
 | 2026-11-16 | 21612586 | RICH part 0 resubmitted (same command and arguments as parts 1–3, fresh output folder `rich_human3r_part0`) | cb31dfa | Submitted 22:50, H100, 8 h. Code differs from 42a2d62 only in `stage_local.sh` and notes, so the eval code is identical to parts 1–3. After it finishes: `merge_global_human.py --expect 191` over the 4 parts. |
 | 2026-11-16 | 21612587 | `bonn_500` MIG drift check, scoring only: `eval_depth.py --align scale` and `--align metric` on the MIG depth maps from 21597188 | cb31dfa | Submitted 22:50, V100S 32 GB (scoring only; the depth maps stay MIG-made), 2 h. Compare with the H100 `bonn_500` from 21559168 (G17). |
+| 2026-11-17 | 21612586 | RICH part 0 | cb31dfa | **Done**, exit 0, 166 min, H100 SXM (gwn10), 48 videos, staging 301 s (fix worked), peak GPU memory 7.6 GB. |
+| 2026-11-16 | 21612587 | `bonn_500` MIG scoring | cb31dfa | **Done**, exit 0, 26 min, V100S (wn206), peak GPU memory 24.7 GB. Result in G17. |
+| 2026-11-17 | – (login node, CPU) | RICH merge: `python repro/merge_global_human.py --out eval_results/global_human/rich_human3r_merged --expect 191 …/rich_human3r_part{0,1,2,3}` | 6238b72 | 191/191 videos, no duplicates, OOM or exception lines; 104,468 matched people. ~10 min, almost all of it cold CephFS imports. Result in section 7. |
 
 Practical observations:
 
@@ -184,6 +188,19 @@ All 24 test sequences, `run.sh` arguments, mm, n_human-weighted mean (upstream `
 
 Detection: precision 70.0 %, recall 98.9 %, F1 79.0 %. Global metrics are 0 for 3DPW (not evaluated upstream).
 **Close but not exact** (G18); open until the annotations are checked.
+
+### RICH global human motion (jobs 21612586, 21592960–62, merged; Table 2)
+
+All 191 test videos (4 parts, merged with the upstream averaging, G15), `run_rich.sh` arguments (reset 1e6, size 512, TTT3R), H100 SXM.
+Units: WA-/W-MPJPE in mm, RTE in % (the log labels them cm, G13).
+
+| | WA-MPJPE | W-MPJPE | RTE |
+|---|---|---|---|
+| Ours | 110.0 | 184.4 | 3.3 |
+| Paper Table 2 | 110.0 | 184.9 | 3.3 |
+
+Not in the paper's table: PA-MPJPE 47.6, MPJPE 71.1, PVE 78.9 mm (camera frame); precision 83.5 %, recall 98.6 %; 104,468 matched people.
+**Reproduced** (W-MPJPE 0.5 mm lower, the others identical).
 
 ### TUM-dynamics camera pose (job 21559068; Fig. 9a)
 
