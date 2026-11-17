@@ -36,7 +36,7 @@ Pose is nearly identical (small PA gap); most of the difference is in size / sca
 - Precision / framework: fp32 inference; torch 2.5.1 as the authors used.
 
 **Still open**
-- [ ] Run-to-run repeatability: identical H100 rerun (~2.75 h). If it moves ~1 mm, the gap is noise. (Also closes the G17 repeatability question.)
+- [ ] Run-to-run repeatability: identical H100 rerun **queued 2026-11-17, job 21623368** (same command and arguments, same H100 SXM type, eval code identical to 42a2d62, fresh folder `3dpw_human3r_rerun1`). If it moves ~1 mm, the gap is noise; if it is bit-identical, noise is ruled out. (Also closes the G17 repeatability question.)
 - [ ] GPU-numerics sensitivity: rerun with TF32 off (`croco.py` enables TF32 matmuls at import; H100 and the authors' RTX 4090 round differently). Optionally with xFormers (not installed here, so DINOv2 uses plain attention).
 - [ ] Checkpoint identity: is the released checkpoint the one behind Table 1? Only the authors can answer (possible comment on upstream issue #11; not posted).
 - [x] Re-check after RICH is merged (2026-11-17): RICH reproduces Table 2 (110.0 / 184.4 / 3.3 vs 110.0 / 184.9 / 3.3), so the human branch as a whole reproduces; the gap looks 3DPW-specific (e.g. the multi-person matching or the 3DPW GT path, `forward_smpl` 3DPW branch / H36M regressor, used only by 3DPW).
@@ -46,7 +46,7 @@ Pose is nearly identical (small PA gap); most of the difference is in size / sca
 ### ⚑ F2: Other open items (short)
 - [x] RICH: merged 2026-11-17, 191/191 videos, matches Table 2 (section 7).
 - [x] G17: MIG `bonn_500` scored (job 21612587); drift grows with length but stays at the last reported digit (G17).
-- [ ] G17: H100 run-to-run repeatability still untested (same rerun as F1).
+- [ ] G17: H100 run-to-run repeatability: answered by the F1 rerun (job 21623368, queued).
 
 ---
 
@@ -165,6 +165,7 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-17 | 21612586 | RICH part 0 | cb31dfa | **Done**, exit 0, 166 min, H100 SXM (gwn10), 48 videos, staging 301 s (fix worked), peak GPU memory 7.6 GB. |
 | 2026-11-16 | 21612587 | `bonn_500` MIG scoring | cb31dfa | **Done**, exit 0, 26 min, V100S (wn206), peak GPU memory 24.7 GB. Result in G17. |
 | 2026-11-17 | – (login node, CPU) | RICH merge: `python repro/merge_global_human.py --out eval_results/global_human/rich_human3r_merged --expect 191 …/rich_human3r_part{0,1,2,3}` | 6238b72 | 191/191 videos, no duplicates, OOM or exception lines; 104,468 matched people. ~10 min, almost all of it cold CephFS imports. Result in section 7. |
+| 2026-11-17 | 21623368 | 3DPW **identical rerun** (repeatability, F1 / G17): same command as 21592963 except the fresh output folder `3dpw_human3r_rerun1` (G15); `--constraint="h100&sxm"` so the GPU type matches the first run (gwn10, H100 80GB HBM3) | c538f03 (`src/`, `eval/` identical to 42a2d62) | Submitted 08:16, 8 h limit. Compare per-sequence lines of `_error_log_0.txt` with `3dpw_human3r`. |
 
 Practical observations:
 
