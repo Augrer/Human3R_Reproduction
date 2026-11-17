@@ -63,11 +63,9 @@ command
 *.npy
 *.npz
 
-# repro: never commit these
-src/*.pth
+# REPRO: never commit these (licensed body models, build output; *.pth and *.so are covered above)
 src/models/
 src/croco/models/curope/build/
-*.so
 
 # REPRO: eval outputs live outside the repo ($PROJ/outputs/eval_results, symlinked)
 eval_results

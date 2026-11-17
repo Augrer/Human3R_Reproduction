@@ -2,7 +2,8 @@
 
 ## Environment
 - Cluster: Arnes HPC (Slurm), node gwn07
-- GPU: NVIDIA H100 PCIe, MIG slice 1g.10gb (paper used a 48 GB GPU)
+- GPU: NVIDIA H100 PCIe, MIG slice 1g.10gb (setup and smoke test only; paper: RTX 4090 for inference
+  timing, one 48 GB GPU for training). GPUs of the eval jobs: REPRO_NOTES section 6.
 - Python 3.11 (conda env via Mamba/23.11.0-0 module, env at $PROJ/envs/human3r)
 - torch 2.5.1+cu124, torchvision 0.20.1+cu124 (pip wheels; README uses conda pytorch-cuda=12.4)
 - Full package list: repro/pip_freeze_2026-11-13.txt
@@ -13,13 +14,14 @@
 2. Skipped conda gcc_linux-64/gxx_linux-64; the cluster's module toolchain built everything.
 3. gsplat installed from git HEAD (README doesn't pin a commit); used --no-build-isolation.
    Version installed: gsplat 1.5.3 (from the pip freeze).
-4. xFormers not installed: DINOv2 falls back to standard attention (same results, slower).
+4. xFormers not installed: DINOv2 falls back to standard attention (slower; results expected equal
+   up to float rounding, but not verified, see REPRO_NOTES G18).
 
 ## Repo issues found
 1. chumpy (git dependency in requirements.txt) fails under pip build isolation
    (setup.py imports pip), and that aborts the whole requirements install.
    Fix: install chumpy with --no-build-isolation, then the rest of requirements separately.
-2. requirements.txt is unpinned, so a fresh install today resolves to newer versions:
+2. requirements.txt is mostly unpinned (REPRO_NOTES G6), so a fresh install today resolves to newer versions:
    - transformers 5.x requires torch >= 2.6 and silently disables itself. Pinned transformers<5.
    - numpy ends up at 1.26.4; keep numpy<2 in all later installs.
    - opencv: requirements pull opencv-python; use opencv-python-headless==4.11.0.86 on headless nodes.
@@ -40,12 +42,14 @@
 ## Smoke test
 - demo.py on examples/GoodMornin1.mp4, --size 512, --use_ttt3r: PASSED
 - 229 frames, inference 211.5 s (0.92 s/frame, ~1.1 FPS) on MIG 1g.10gb, no xFormers, first run
-- Not comparable to the paper's ~15 FPS yet (1/7 of an H100, no xFormers, warm-up)
+- Not comparable to the paper's speed numbers (1/7 of an H100, no xFormers, warm-up). The paper's
+  15 FPS is the ViT-S/672 model; this checkpoint (ViT-L/896) is listed at ~5 FPS (REPRO_NOTES G9).
 - Output: camera/ color/ conf/ depth/ smpl/ as per-frame .npz, ~3 MB per frame
 - Qualitatively: 3 people tracked with consistent identities, bodies on the floor plane
 
 ## Practical things
 - Viewer: run demo.py in a job, then VS Code Ports tab -> Forward a Port -> <node>:8080.
+
 ## Data preparation (2026-11-15)
 - TUM-dynamics (8 freiburg3 seqs) and Bonn (5 seqs) downloaded raw to $PROJ/data/{tum,bonn}/
   (scripts outside the repo: tools/tum_download.sh, tools/bonn_download.sh).
@@ -64,6 +68,9 @@
    (fixes the inconsistent Bonn roots, REPRO_NOTES B1); sintel -> $H3R_DATA/sintel/training/...
    Not changed: docs/, usage strings, config/trian_human3r.yaml + preprocess_bedlam.py (training).
    Verified: tum (8x90), tum_1000, bonn (5x110), bonn_500 resolve with frames + GT present.
+   Caveat: in a job snapshot (`$PROJ/runs/<job>/`) the default would resolve to `$PROJ/runs/data`,
+   which does not exist. `repro/slurm/run.sbatch` exports `H3R_DATA` explicitly; set it by hand when
+   running anything from inside a snapshot.
 2. evo API (2026-11-15). requirements.txt does not pin `evo`; pip installed 1.38.1, whose
    `main_ape.ape()` / `main_rpe.rpe()` no longer accept `est_name=` (the label is read from
    `traj.name`). The first TUM run (job 21558187) crashed with `TypeError: ape() got an unexpected
