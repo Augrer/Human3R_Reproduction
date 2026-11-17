@@ -37,7 +37,7 @@ Pose is nearly identical (small PA gap); most of the difference is in size / sca
 
 **Still open**
 - [ ] Run-to-run repeatability: identical H100 rerun **queued 2026-11-17, job 21623368** (same command and arguments, same H100 SXM type, eval code identical to 42a2d62, fresh folder `3dpw_human3r_rerun1`). If it moves ~1 mm, the gap is noise; if it is bit-identical, noise is ruled out. (Also closes the G17 repeatability question.)
-- [ ] GPU-numerics sensitivity: rerun with TF32 off (`croco.py` enables TF32 matmuls at import; H100 and the authors' RTX 4090 round differently). Optionally with xFormers (not installed here, so DINOv2 uses plain attention).
+- [ ] GPU-numerics sensitivity: TF32-off run **queued 2026-11-17, job 21623935** (`NVIDIA_TF32_OVERRIDE=0`, otherwise identical, folder `3dpw_human3r_tf32off`). Check on MIG beforehand (vs float64, 2048² matmul / 3×3 conv): TF32 as configured max error 7.5e-2 / 3.5e-2, with the override 4.8e-4 / 1.2e-4, so **all our evals so far ran matmuls and convolutions in TF32** (`croco.py` sets matmul TF32; cuDNN conv TF32 is PyTorch's default). The authors' RTX 4090 also uses TF32, with different hardware rounding. Optionally later: with xFormers (not installed here, so DINOv2 uses plain attention).
 - [ ] Checkpoint identity: is the released checkpoint the one behind Table 1? Only the authors can answer (possible comment on upstream issue #11; not posted).
 - [x] Re-check after RICH is merged (2026-11-17): RICH reproduces Table 2 (110.0 / 184.4 / 3.3 vs 110.0 / 184.9 / 3.3), so the human branch as a whole reproduces; the gap looks 3DPW-specific (e.g. the multi-person matching or the 3DPW GT path, `forward_smpl` 3DPW branch / H36M regressor, used only by 3DPW).
 
@@ -166,6 +166,7 @@ H100 PCIe (80 GB), `H3R_DATA=$PROJ/data`, checkpoint `human3r_896L.pth` via the 
 | 2026-11-16 | 21612587 | `bonn_500` MIG scoring | cb31dfa | **Done**, exit 0, 26 min, V100S (wn206), peak GPU memory 24.7 GB. Result in G17. |
 | 2026-11-17 | – (login node, CPU) | RICH merge: `python repro/merge_global_human.py --out eval_results/global_human/rich_human3r_merged --expect 191 …/rich_human3r_part{0,1,2,3}` | 6238b72 | 191/191 videos, no duplicates, OOM or exception lines; 104,468 matched people. ~10 min, almost all of it cold CephFS imports. Result in section 7. |
 | 2026-11-17 | 21623368 | 3DPW **identical rerun** (repeatability, F1 / G17): same command as 21592963 except the fresh output folder `3dpw_human3r_rerun1` (G15); `--constraint="h100&sxm"` so the GPU type matches the first run (gwn10, H100 80GB HBM3) | c538f03 (`src/`, `eval/` identical to 42a2d62) | Submitted 08:16, 8 h limit. Compare per-sequence lines of `_error_log_0.txt` with `3dpw_human3r`. |
+| 2026-11-17 | 21623935 | 3DPW **TF32 off** (numerics sensitivity, F1): same as 21623368 but prefixed `env NVIDIA_TF32_OVERRIDE=0` (forces full fp32 in cuBLAS / cuDNN, overriding `allow_tf32`), folder `3dpw_human3r_tf32off`, `--main_process_port 29551` (avoids a clash if both jobs share a node; no effect on results), 10 h limit (fp32 is slower) | a3dc794 (`src/`, `eval/` identical to 42a2d62) | Submitted 08:25. Compare with 21592963 and 21623368: the spread between them is the numerics effect. |
 
 Practical observations:
 
