@@ -1,0 +1,24 @@
+# SHA256 of the raw archives used in this study (hashes only; the data are not in this repo).
+# Compare with the SHA256SUMS file the download scripts write into $H3R_DATA/_archives/<dataset>/.
+## tum (https://cvg.cit.tum.de/rgbd/dataset/freiburg3, downloaded 2026-11-15)
+ba9f0fab0d07e22f04fbfae16eb4e3fb44088a32c920ad36c782b5024ed4b767  rgbd_dataset_freiburg3_sitting_halfsphere.tgz
+2ac397fff9e21cbfad707d549bc07b83d27fe02f59f3678072e9a7bba684a67e  rgbd_dataset_freiburg3_sitting_rpy.tgz
+6239d4b7f6edcab719b51c76434acdc238d03dad666758b51e6046992a7c3914  rgbd_dataset_freiburg3_sitting_static.tgz
+05c071672cda22a668860a935124737a4eb4fa772cbad372e73d5a99ce4be205  rgbd_dataset_freiburg3_sitting_xyz.tgz
+c4984f4894724398590dcf18c3d9d54dbb76cce925d51695f44ad8e697fc8458  rgbd_dataset_freiburg3_walking_halfsphere.tgz
+8727e72a01da0150996aa98a63682e1798e4d6d196c30d35e8f693b33fba3d5d  rgbd_dataset_freiburg3_walking_rpy.tgz
+8aca832bf01746aa95fcc0b15bf42d78ad3bb8edef672ba4cc94a404b194f6c1  rgbd_dataset_freiburg3_walking_static.tgz
+1459e9488ac0e61a2ec80dfbc35cfb77942f6d8eabded1c8d26a70be650d0e1d  rgbd_dataset_freiburg3_walking_xyz.tgz
+## bonn (https://www.ipb.uni-bonn.de/html/projects/rgbd_dynamic2019, downloaded 2026-11-15)
+9e84087740fbe845f6ed3a6b652656068d960c36c28148321f2cb108dd257aba  rgbd_bonn_balloon2.zip
+e751ca1b64165f3789d1c396d5c5c3d25e7ceb49cab01fad9ec87993f6244840  rgbd_bonn_crowd2.zip
+1e630f12389c0552ad3edb3cfdb64b9872ad1a24641016ef70ab7e0008d79c23  rgbd_bonn_crowd3.zip
+d3ef7898529c60dc39919ea699d00490d98a2c6ae4b165610f2955b235b939b5  rgbd_bonn_person_tracking2.zip
+80fc209a7b2905cf3a6dbdafd563b6d3ffb59e23baed8c988c526a629ce53534  rgbd_bonn_synchronous.zip
+## 3DPW (https://virtualhumans.mpi-inf.mpg.de/3DPW/, downloaded 2026-11-14)
+1e62219a66b49fc9f4eedb381a4386273e3e92ad8ee55ac53fe93eebaec8ae5b  imageFiles.zip
+20ab5eb75b4d59fc6a33c928bffab70e3e95d791045bad64e249b5a262dd79d5  readme_and_demo.zip
+889c5faee2c3e3404b5f8e1dbc53c3af857234b6e30e6413938a1acaa7f2be1c  sequenceFiles.zip
+## RICH (https://rich.is.tue.mpg.de, login required; downloaded 2026-11-14/15)
+5cd9a46f53c50317db0b3cc85d8039fb8dc5b9745794be35059b0e92f4f3e707  JPG_images/test.tar.gz (242598234351 bytes)
+a36ab30f21a590944848ac9ddc199d93b3db2392522ba70ea6c7042b55c611da  RICH_hmr4d_support.tar.gz

@@ -51,7 +51,7 @@ Pose is nearly identical (small PA gap); most of the difference is in size / sca
 - [ ] G17: H100 run-to-run repeatability: answered by the F1 rerun (job 21623368, queued).
 - [ ] Traceability: the 2026-11-15 review that the claims list (section 0) is based on is not in the repo or under `$PROJ`. Add it, or state that the list was re-derived from the paper (C1–C7 numbers and G11 values have since been checked against the paper text and the code).
 - [ ] Traceability: the TF32 pre-check cited in F1 was run from `$PROJ/logs/_tf32check.py`, which is outside the repo and has no job log; move it to `repro/checks/` and record node and output.
-- [ ] Artifact completeness: the download / extraction scripts (`$PROJ/tools/*.sh`, `*.sbatch`) and `notes/decisions.md` are outside the repo, but SETUP_NOTES and section 5 refer to them. For a public artifact, copy the scripts that define the data (TUM, Bonn, RICH extraction; they contain no credentials) into `repro/`.
+- [x] Artifact completeness (2026-11-17): the data scripts are now in `repro/datasets_download/` (TUM, Bonn, RICH single-connection download, RICH extraction, archive SHA256 list), with paths from `H3R_DATA` and no usernames, credentials or data. Not published: the 2-connection RICH downloader and the login diagnostics (they stay in `$PROJ/tools/`), and `notes/decisions.md`.
 
 ---
 
