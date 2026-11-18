@@ -1,0 +1,17 @@
+EMDB/P8/69_outdoor_cartwheel
+EMDB/P5/42_indoor_dancing
+EMDB/P6/51_outdoor_dancing
+EMDB/P2/23_outdoor_hug_tree
+EMDB/P6/49_outdoor_big_stairs_down
+EMDB/P7/59_outdoor_rom
+EMDB/P3/31_outdoor_workout
+EMDB/P3/33_outdoor_soccer_warmup_b
+EMDB/P7/57_outdoor_rock_chair
+EMDB/P3/32_outdoor_soccer_warmup_a
+EMDB/P8/64_outdoor_skateboard
+EMDB/P7/60_outdoor_workout
+EMDB/P6/50_outdoor_workout
+EMDB/P8/68_outdoor_handstand
+EMDB/P9/76_outdoor_sitting
+EMDB/P1/14_outdoor_climb
+EMDB/P5/44_indoor_rom
