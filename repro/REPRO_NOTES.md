@@ -276,3 +276,53 @@ Scale-aligned numbers are not reported in the paper.
 
 Caveat for both: these confirm the released checkpoint + scripts reproduce the published curves.
 They do not test the TTT3R / CUT3R baseline curves or the reset effect (G10).
+
+## 8. Extension: Hi4D close interaction (not in the paper)
+
+Not a reproduction claim: Human3R is not evaluated on Hi4D in the paper and was not trained on it.
+Code: `repro/datasets_preprocess/prepare_hi4d.py` (annotations), `--eval_dataset hi4d` (SETUP_NOTES
+items 5 and 6), `repro/hi4d_metrics.py` (extra metrics), `repro/checks/check_hi4d_annots.py`.
+
+### Protocol and where it comes from (literature check 2026-11-19)
+
+**There is no official Hi4D split.** The dataset repository ([yifeiyin04/Hi4D](https://github.com/yifeiyin04/Hi4D),
+README and `dataset.md`, read 2026-11-19) defines none and lists no test pairs; `dataset.md` describes
+`meta.npz` `mono_cam` as "the selected camera view for vision tasks in monocular setting".
+
+**De facto test split = BUDDI's.** Müller et al., *Generative Proxemics: A Prior for 3D Social
+Interaction from Images* (BUDDI), arXiv:2306.09337v2 (venue not checked; the arXiv page lists none), Sup. Mat. S4.2 "Hi4D", quoted from
+the arXiv HTML version on 2026-11-19 (to be checked against the PDF before the report):
+- "We split this dataset by subject pair into 14/3/3 for train/val/test."
+- "We use subjects [00, 01, 02, 09, 10, 13, 14, 17, 18, 21, 23, 27, 28, 37] for training, [16,19,22] for validation, and [12, 15, 32] for testing."
+- "The dataset provides a start and end frame from/to which each sequence involves physical contact between two people."
+- "We use every 5th frame from the contact sequence for training and testing."
+- Main text, metrics: "We also report the joint PA-MPJPE computed by performing Procrustes alignment of both people together."
+
+Reused by later work:
+- Wang et al., *PromptHMR: Promptable Human Mesh Recovery*, CVPR 2025, arXiv:2504.06397v2, Sec. 4:
+  "we add CHI3D and HI4D to enable learning two-person interaction following the train-test splits from
+  BUDDI"; Sec. 8.4: "Paired PA-MPJPE (Pair-PA-MPJPE) aligns two people as a whole with the ground truth
+  before computing MPJPE." Table 2 is headed "HI4D (14)" (14 joints, not named) and reports
+  PA-MPJPE / MPJPE / Pair-PA-MPJPE; methods not trained on Hi4D (marked ∗): Multi-HMR 49.8 / 67.8 / 80.6,
+  PromptHMR 39.2 / 63.9 / 78.1, BEV 81 / – / 136.
+- CISyn, arXiv:2611.18894: "Following PromptHMR, we use pairs 12, 15, and 32 of Hi4D as the test set";
+  MPJPE / PA-MPJPE / PVE, "root-relative and computed over detected people"; Table 2 Multi-HMR
+  86.7 / 52.8 / 106.2 (MPJPE / PA-MPJPE / PVE).
+
+**Not specified by any of the three** (our choices, marked **[ours]**): which camera(s) are scored at
+test time; the joint set (BUDDI none, PromptHMR "14"); input frame rate for video methods. The same
+Multi-HMR checkpoint is reported as PA-MPJPE / MPJPE 49.8 / 67.8 (PromptHMR) and 52.8 / 86.7 (CISyn),
+so the published protocols differ in details; literature numbers are context, not exact comparisons.
+
+| # | Choice | Source / reason |
+|---|---|---|
+| H1 | Test pairs 12, 15, 32 (all their actions) | BUDDI S4.2; PromptHMR; CISyn |
+| H2 | Frames: the contact range `meta.npz` start..end (`prepare_hi4d.py` asserts the SMPL frames are exactly this range, consecutive) | BUDDI S4.2 |
+| H3 | Scoring on every 5th frame of the contact range, starting at `start` (`eval_stride` = 5, env `H3R_HI4D_EVAL_STRIDE`) | BUDDI S4.2 |
+| H4 | **[ours]** The model gets **every** frame as video input; only scoring is subsampled. BUDDI and PromptHMR are per-image methods, for which this makes no difference; Human3R is a streaming video model, and feeding every 5th frame would change its input. | |
+| H5 | **[ours]** Main view: `mono_cam` per action (dataset's designated monocular view). Variant: all 8 cameras as separate sequences (`--cams all`, split `test_allcams`), labelled as such. | `dataset.md`; papers silent |
+| H6 | Per-person PA-MPJPE / MPJPE / PVE over matched people (upstream matching, root-aligned by pelvis) | CISyn ("computed over detected people"); same code as our 3DPW / EMDB runs |
+| H7 | **[ours]** Joint sets: 24 SMPL joints (upstream default, logged by `launch.py`) **and** the 14 H36M joints used for "3DPW (14)" in this repo (`repro/hi4d_metrics.py`); PromptHMR's 14 are probably this LSP-style set, unverified. | PromptHMR "(14)" |
+| H8 | Pair-PA-MPJPE: one similarity transform for both people's stacked joints, frames where both are matched | BUDDI ("joint PA-MPJPE"), PromptHMR Sec. 8.4 |
+| H9 | Run arguments as for 3DPW (`--size 512 --reset_interval 100 --use_ttt3r`) | Human3R `run.sh` (local mesh) |
+| H10 | Fair literature context: methods **not trained on Hi4D** (PromptHMR Table 2 ∗ rows), since Human3R never saw Hi4D | |

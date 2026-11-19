@@ -224,7 +224,13 @@ def eval_smpl_error(args, model, smpl_model, smpl_layer, save_dir=None):
                 global_batch = []
                 metrics = defaultdict(list)
                 counter = Counter()
+                # REPRO: optional per-dataset scoring stride (default 1 = every frame, unchanged for all
+                # upstream datasets) and dump of matched pred/GT meshes for offline metrics (Hi4D).
+                eval_stride = metadata.get("eval_stride", 1)
+                dump = defaultdict(list) if metadata.get("dump_matched", False) else None
                 for f_id in range(len(filelist)):
+                    if f_id % eval_stride:  # REPRO: the model still sees every frame; only scoring skips
+                        continue
                     n_humans_i = pred['shape'][f_id].shape[0]
                     if n_humans_i > 0:
                         pred_v3d_c = get_pred_smpl(
@@ -257,6 +263,12 @@ def eval_smpl_error(args, model, smpl_model, smpl_layer, save_dir=None):
 
                         for k, v in camcoord_metrics.items():
                             metrics[k].append(v)
+
+                        if dump is not None:  # REPRO
+                            dump['f_id'].append(np.full(len(bestMatch), f_id))
+                            dump['gid'].append(to_numpy(gid))
+                            dump['pred_v3d'].append(to_numpy(pred_v3d_c[pid]).astype(np.float32))
+                            dump['target_v3d'].append(to_numpy(gt['v3d_c'][f_id][gid]).astype(np.float32))
 
                         if is_global:
                             expand = lambda x: x.expand(len(bestMatch), -1, -1)
@@ -315,6 +327,13 @@ def eval_smpl_error(args, model, smpl_model, smpl_layer, save_dir=None):
                 # Write to error log after each sequence
                 os.makedirs(save_dir, exist_ok=True)
                 write_log(error_log_path, args.eval_dataset, seq, counter, metrics)
+                if dump is not None:  # REPRO: one .npz per sequence (process_directory reads only .txt)
+                    os.makedirs(f"{save_dir}/matched", exist_ok=True)
+                    np.savez_compressed(
+                        f"{save_dir}/matched/{seq.replace('/', '__')}.npz",
+                        eval_stride=eval_stride, n_frames=len(filelist),
+                        frames=np.array([os.path.basename(f) for f in filelist]),
+                        **{k: (np.concatenate(v) if v else np.zeros(0)) for k, v in dump.items()})
 
                 del gt, pred, filelist, sampled_indices
                 del global_batch, metrics, counter

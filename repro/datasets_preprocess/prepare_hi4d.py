@@ -13,7 +13,7 @@ Input (official Hi4D layout, unpacked):  <data>/Hi4D/<pair>/<action>/
 Output:  eval/global_human/annots/hi4d_<split>.pkl  (gitignored) + hi4d_<split>.json (provenance)
     { "<pair>/<action>/cam<k>": {
         "cam": k, "K": (3,3), "T_w2c": (4,4), "size": (W,H), "genders": [g0, g1],
-        "frames": [<frame stem>, ...]                       # frames with SMPL GT, sorted
+        "frames": [<frame stem>, ...]                       # contact range meta start..end, consecutive
         "smpl_root_pose": (F,2,3)  axis-angle, CAMERA frame
         "smpl_body_pose": (F,2,23,3), "smpl_shape": (F,2,10)
         "smpl_transl":    (F,2,3)  CAMERA frame
@@ -30,6 +30,9 @@ Self-checks, per sequence (the script fails if either exceeds --tol_mm):
 Usage (from the repo root, CPU is enough):
     python repro/datasets_preprocess/prepare_hi4d.py --pairs pair00 --split test
     python repro/datasets_preprocess/prepare_hi4d.py --split test        # every pair under <data>/Hi4D
+    BUDDI test split (REPRO_NOTES section 8):
+    python repro/datasets_preprocess/prepare_hi4d.py --pairs pair12 pair15 pair32 --split test
+    python repro/datasets_preprocess/prepare_hi4d.py --pairs pair12 pair15 pair32 --split test_allcams --cams all
 """
 import argparse
 import datetime
@@ -95,8 +98,14 @@ def convert_sequence(seq_dir, cam_id, layers, min_joints_in, tol_mm):
 
     img_dir = os.path.join(seq_dir, "images", str(cam_id))
     imgs = {os.path.splitext(f)[0] for f in os.listdir(img_dir) if f.endswith(".jpg")}
-    smpl_files = sorted(glob.glob(os.path.join(seq_dir, "smpl", "*.npz")))
+    # contact range: meta start..end ("the start and end frame from/to which each sequence involves
+    # physical contact", BUDDI Sup. S4.2). Frames must be consecutive: eval_stride counts by position.
+    start, end = int(meta["start"]), int(meta["end"])
+    smpl_all = sorted(glob.glob(os.path.join(seq_dir, "smpl", "*.npz")))
+    smpl_files = [f for f in smpl_all if start <= int(os.path.splitext(os.path.basename(f))[0]) <= end]
     frames = [os.path.splitext(os.path.basename(f))[0] for f in smpl_files]
+    ids = [int(f) for f in frames]
+    assert ids == list(range(start, end + 1)), f"SMPL frames are not exactly {start}..{end} (gaps?)"
     missing = [f for f in frames if f not in imgs]
     assert not missing, f"{len(missing)} SMPL frames without an image, e.g. {missing[:3]}"
     from PIL import Image
@@ -143,7 +152,8 @@ def convert_sequence(seq_dir, cam_id, layers, min_joints_in, tol_mm):
     assert err_cam < tol_mm, f"camera-frame conversion error {err_cam:.3f} mm"
     ann = dict(cam=cam_id, K=K.astype(np.float32), T_w2c=T_w2c.astype(np.float32),
                size=np.array([W, H], np.int32), genders=genders, frames=frames, visible=visible, **out)
-    stats = dict(frames=P, person_frames_visible=int(visible.sum()), person_frames_total=2 * P,
+    stats = dict(frames=P, contact_range=[start, end], smpl_files_outside_range=len(smpl_all) - P,
+                 person_frames_visible=int(visible.sum()), person_frames_total=2 * P,
                  max_err_world_mm=round(err_world, 4), max_err_cam_mm=round(err_cam, 4), genders=genders)
     return ann, stats
 
@@ -153,7 +163,7 @@ def main():
     ap.add_argument("--data", default=os.path.join(H3R_DATA, "Hi4D"))
     ap.add_argument("--pairs", nargs="*", default=None, help="pair folders (default: all under --data)")
     ap.add_argument("--split", default="test", help="output name: annots/hi4d_<split>.pkl")
-    ap.add_argument("--cam", type=int, default=None, help="camera id for every sequence (default: meta mono_cam)")
+    ap.add_argument("--cams", default="mono", help="'mono' (meta mono_cam, default), 'all' (all 8 cameras, one sequence each), or a comma list of ids")
     ap.add_argument("--min_joints_in", type=int, default=12,
                     help="a person counts as visible in a frame if at least this many of 24 joints project inside the image")
     ap.add_argument("--tol_mm", type=float, default=1.0)
@@ -168,10 +178,16 @@ def main():
             seq_dir = os.path.join(a.data, pair, action)
             if not os.path.isfile(os.path.join(seq_dir, "meta.npz")):
                 continue
-            cam = a.cam if a.cam is not None else int(np.load(os.path.join(seq_dir, "meta.npz"))["mono_cam"])
-            key = f"{pair}/{action}/cam{cam}"
-            annots[key], report[key] = convert_sequence(seq_dir, cam, layers, a.min_joints_in, a.tol_mm)
-            print(key, report[key], flush=True)
+            if a.cams == "mono":
+                cams = [int(np.load(os.path.join(seq_dir, "meta.npz"))["mono_cam"])]
+            elif a.cams == "all":
+                cams = [int(c) for c in np.load(os.path.join(seq_dir, "cameras", "rgb_cameras.npz"))["ids"]]
+            else:
+                cams = [int(c) for c in a.cams.split(",")]
+            for cam in cams:
+                key = f"{pair}/{action}/cam{cam}"
+                annots[key], report[key] = convert_sequence(seq_dir, cam, layers, a.min_joints_in, a.tol_mm)
+                print(key, report[key], flush=True)
 
     os.makedirs(ANNOT_DIR, exist_ok=True)
     pkl = os.path.join(ANNOT_DIR, f"hi4d_{a.split}.pkl")
@@ -179,7 +195,7 @@ def main():
         pickle.dump(annots, f, protocol=pickle.HIGHEST_PROTOCOL)
     commit = subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     prov = dict(created=datetime.datetime.now().isoformat(timespec="seconds"), commit=commit, data=a.data,
-                pairs=pairs, cam=a.cam or "mono_cam", min_joints_in=a.min_joints_in, sequences=report,
+                pairs=pairs, cams=a.cams, min_joints_in=a.min_joints_in, sequences=report,
                 totals=dict(sequences=len(annots), frames=sum(r["frames"] for r in report.values()),
                             person_frames_visible=sum(r["person_frames_visible"] for r in report.values())))
     with open(pkl[:-4] + ".json", "w") as f:

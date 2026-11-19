@@ -100,3 +100,12 @@
    frames). Joints: the default branch of `_setup_dataset_config` (24 SMPL joints, pelvis [1, 2],
    as for EMDB). Annotations built by repro/datasets_preprocess/prepare_hi4d.py (self-checks
    against Hi4D's shipped vertices); eval path checked on CPU by repro/checks/check_hi4d_annots.py.
+6. Hi4D scoring protocol (2026-11-19, extension; REPRO_NOTES section 8). eval/global_human/launch.py:
+   two optional per-dataset keys read from the metadata entry, both off by default so every
+   upstream dataset runs exactly as before: `eval_stride` (score only frames f_id % stride == 0; the
+   model still gets every frame) and `dump_matched` (write matched pred / GT SMPL vertices per
+   sequence to <output_dir>/matched/<seq>.npz; the summary reads only .txt files). The `hi4d` entry
+   sets eval_stride = 5 (env `H3R_HI4D_EVAL_STRIDE`) and dump_matched = True.
+   prepare_hi4d.py: frames restricted to the contact range meta start..end (asserted consecutive),
+   `--cams mono|all|<ids>`. New repro/hi4d_metrics.py: 14-joint metrics and Pair-PA-MPJPE from
+   the dump, self-checked against the launch.py log (24 joints).

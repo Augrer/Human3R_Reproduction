@@ -67,7 +67,9 @@ dataset_metadata = {
     # REPRO: Hi4D (extension, not in the paper): close two-person interaction, static cameras ->
     # camera-frame metrics only. Annotations from repro/datasets_preprocess/prepare_hi4d.py;
     # sequence keys "<pair>/<action>/cam<k>". Annotation file annots/hi4d_<split>.pkl, split from
-    # env H3R_HI4D_SPLIT (default "test").
+    # env H3R_HI4D_SPLIT (default "test"). Protocol (REPRO_NOTES section 8): BUDDI test pairs, the
+    # model sees every frame, scoring on every 5th (eval_stride, env H3R_HI4D_EVAL_STRIDE);
+    # matched meshes are dumped for the offline metrics in repro/hi4d_metrics.py.
     "hi4d": {
         "img_path": os.path.join(H3R_DATA, "Hi4D"),
         "dir_path_func": lambda img_path, seq: os.path.join(
@@ -81,6 +83,8 @@ dataset_metadata = {
         "get_seq_func": lambda img_path, split, annots: get_seq_hi4d(img_path, split, annots),
         "get_annot_func": lambda img_path, split: get_annot(img_path, split, "hi4d"),
         "is_global": lambda split: False,
+        "eval_stride": int(os.environ.get("H3R_HI4D_EVAL_STRIDE", "5")),
+        "dump_matched": True,
     },
 }
 
