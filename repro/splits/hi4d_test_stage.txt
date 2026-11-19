@@ -1,0 +1,15 @@
+Hi4D/pair12/basketball12/images/52
+Hi4D/pair12/fight12/images/16
+Hi4D/pair12/highfive12/images/4
+Hi4D/pair12/hug12/images/4
+Hi4D/pair12/talk12/images/16
+Hi4D/pair15/backhug15/images/88
+Hi4D/pair15/dance15/images/52
+Hi4D/pair15/fight15/images/52
+Hi4D/pair15/hug15/images/52
+Hi4D/pair15/kiss15/images/52
+Hi4D/pair15/pose15/images/52
+Hi4D/pair32/cheers32/images/76
+Hi4D/pair32/fight32/images/76
+Hi4D/pair32/pose32/images/76
+Hi4D/pair32/sidehug32/images/76
