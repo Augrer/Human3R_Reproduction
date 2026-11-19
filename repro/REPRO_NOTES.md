@@ -336,3 +336,18 @@ so the published protocols differ in details; literature numbers are context, no
 | H8 | Pair-PA-MPJPE: one similarity transform for both people's stacked joints, frames where both are matched | BUDDI ("joint PA-MPJPE"), PromptHMR Sec. 8.4 |
 | H9 | Run arguments as for 3DPW (`--size 512 --reset_interval 100 --use_ttt3r`) | Human3R `run.sh` (local mesh) |
 | H10 | Fair literature context: methods **not trained on Hi4D** (PromptHMR Table 2 ∗ rows), since Human3R never saw Hi4D | |
+
+**Has any part of Human3R seen Hi4D? No (checked 2026-11-19).** The released checkpoint is built from
+`cut3r_512_dpt_4_64.pth` and `multiHMR_896_L.pt` (`config/trian_human3r.yaml` lines 8–9) and fine-tuned on
+BEDLAM only (Human3R paper, "Training Strategy"; CUT3R and the Multi-HMR encoder frozen).
+- Multi-HMR ([naver/multi-hmr](https://github.com/naver/multi-hmr) README, checkpoint table, read 2026-11-19):
+  `multiHMR_896_L` trained on "BEDLAM+AGORA+CUFFS+UBody"; no checkpoint lists Hi4D or CHI3D.
+- CUT3R (*Continuous 3D Perception Model with Persistent State*, arXiv:2501.12387v1, Appendix A, Table 6,
+  read via the arXiv HTML 2026-11-19): 33 rows (Sec. 3.4 says "32 datasets"), no Hi4D and no other
+  human-interaction MoCap set. It does include **HOI4D**, a different dataset despite the name
+  (egocentric hand–object interaction), used as single views.
+- Not checkable: DINOv2's web-image pretraining data (LVD-142M); Hi4D is access-controlled, so contamination
+  is unlikely but not provable.
+Consequence: for Human3R every Hi4D pair is unseen. The BUDDI test split (H1) is for comparability with
+published numbers, not for holding out training data; an all-pairs run would be a valid zero-shot number
+too (needs the remaining archives unpacked).
