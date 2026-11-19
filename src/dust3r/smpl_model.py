@@ -104,6 +104,23 @@ class SMPLModel(object):
                 idx = torch.where(smpl_dict['smpl_gender_id'] == 2)[1]
                 verts[idx] = out_female.vertices.reshape(nhv, -1, 3)[idx]
                 
+        elif dataset in ['hi4d']:
+            # REPRO: Hi4D (extension). Camera-frame SMPL like 3DPW, but every frame mixes genders, so
+            # pick the body model per person on the masked (flattened) list. The 3DPW branch above
+            # indexes with the person slot instead (REPRO_NOTES G18 d) and would assign genders wrongly here.
+            smpl_params = {
+                'global_orient': smpl_dict['smpl_root_pose'][smpl_mask].reshape(-1,3),
+                'body_pose': smpl_dict['smpl_body_pose'][smpl_mask].reshape(-1,23*3),
+                'betas': smpl_dict['smpl_shape'][smpl_mask].reshape(-1,10),
+                'transl': smpl_dict['smpl_transl'][smpl_mask].reshape(-1,3),
+                }
+            gender_ids = smpl_dict['smpl_gender_id'][smpl_mask].reshape(-1).long()
+            assert bool(((gender_ids == 1) | (gender_ids == 2)).all()), "hi4d: gender id must be 1 (male) or 2 (female)"
+            verts = self.smpl[1](**smpl_params).vertices.reshape(nhv, -1, 3)
+            is_female = gender_ids == 2
+            if bool(is_female.any()):
+                verts[is_female] = self.smpl[2](**smpl_params).vertices.reshape(nhv, -1, 3)[is_female]
+
         elif dataset in ['emdb', 'emdb1', 'emdb2']:
             gender = smpl_dict['smpl_gender_id'].max()
             out = self.smpl[gender](

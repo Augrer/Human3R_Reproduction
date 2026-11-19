@@ -69,3 +69,6 @@ src/croco/models/curope/build/
 
 # REPRO: eval outputs live outside the repo ($PROJ/outputs/eval_results, symlinked)
 eval_results
+
+# REPRO: provenance files written next to annotation pickles (contain local paths)
+eval/global_human/annots/*.json

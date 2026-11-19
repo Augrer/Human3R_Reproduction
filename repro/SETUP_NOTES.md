@@ -91,3 +91,12 @@
    smpl_model -> dust3r.utils -> smpl_layer -> smpl_model). launch.py is unaffected because it
    imports dust3r.utils first. Fix: one line `import dust3r.utils` before the smpl_model import in
    eval/dataset/prepare_3dpw.py. No effect on the annotations.
+5. Hi4D eval support (2026-11-19, extension, not in the paper; additions only, no existing code path
+   changed). eval/global_human/metadata.py: new `hi4d` entry (camera-frame metrics only,
+   `is_global=False`; annotation file `annots/hi4d_<split>.pkl`, split from env `H3R_HI4D_SPLIT`,
+   default `test`) plus `get_seq_hi4d` / `load_view_hi4d`. src/dust3r/smpl_model.py
+   `forward_smpl`: new `hi4d` branch that picks the SMPL gender per person on the masked list
+   (the `3dpw` branch's indexing, REPRO_NOTES G18 d, would mix up genders in Hi4D's female + male
+   frames). Joints: the default branch of `_setup_dataset_config` (24 SMPL joints, pelvis [1, 2],
+   as for EMDB). Annotations built by repro/datasets_preprocess/prepare_hi4d.py (self-checks
+   against Hi4D's shipped vertices); eval path checked on CPU by repro/checks/check_hi4d_annots.py.

@@ -63,7 +63,25 @@ dataset_metadata = {
         "get_seq_func": lambda img_path, split, annots: get_seq_rich(img_path, split, annots),
         "get_annot_func": lambda img_path, split: get_annot_rich(),
         "is_global": lambda split: True,
-    }
+    },
+    # REPRO: Hi4D (extension, not in the paper): close two-person interaction, static cameras ->
+    # camera-frame metrics only. Annotations from repro/datasets_preprocess/prepare_hi4d.py;
+    # sequence keys "<pair>/<action>/cam<k>". Annotation file annots/hi4d_<split>.pkl, split from
+    # env H3R_HI4D_SPLIT (default "test").
+    "hi4d": {
+        "img_path": os.path.join(H3R_DATA, "Hi4D"),
+        "dir_path_func": lambda img_path, seq: os.path.join(
+            img_path, seq.rsplit("/", 1)[0], "images", seq.rsplit("/cam", 1)[1]),
+        "seq_list": None,
+        "full_seq": True,
+        "mask_path_func": lambda filelist: [],
+        "split": os.environ.get("H3R_HI4D_SPLIT", "test"),
+        "subsample": 1,
+        "get_view_func": lambda inputs: load_view_hi4d(*inputs),
+        "get_seq_func": lambda img_path, split, annots: get_seq_hi4d(img_path, split, annots),
+        "get_annot_func": lambda img_path, split: get_annot(img_path, split, "hi4d"),
+        "is_global": lambda split: False,
+    },
 }
 
 
@@ -365,4 +383,46 @@ def load_view_rich(img_paths, images, annots, indices):
             **smpl_dict,
         })
 
+    return images
+
+
+# REPRO: Hi4D loader (extension). Both people are annotated in every frame; a person outside the
+# view (prepare_hi4d.py --min_joints_in) is masked out like an invalid 3DPW person.
+def get_seq_hi4d(img_path, split, annots=None):
+    if annots is None:
+        annots = get_annot(img_path, split, "hi4d")
+    seq_list = sorted(annots.keys())
+    seq_to_images = {seq: [f"{f}.jpg" for f in annots[seq]["frames"]] for seq in seq_list}
+    return seq_list, seq_to_images
+
+
+def load_view_hi4d(img_paths, images, annots, indices):
+    seq_dir = img_paths[0].split('/')
+    seq = f"{seq_dir[-5]}/{seq_dir[-4]}/cam{seq_dir[-2]}"  # .../<pair>/<action>/images/<cam>/<frame>.jpg
+    a = annots[seq]
+    frame_idx = {f: i for i, f in enumerate(a["frames"])}
+
+    T_w2c = a["T_w2c"].astype(np.float32)
+    camera_pose = np.linalg.inv(T_w2c)  # T_c2w
+    intrinsics = a["K"].copy()
+    fy_scale, fx_scale = (images[0]['true_shape'] / images[0]['ori_shape'])[0]
+    intrinsics[0, 0] *= fx_scale
+    intrinsics[1, 1] *= fy_scale
+    intrinsics[0, 2] *= fx_scale
+    intrinsics[1, 2] *= fy_scale
+
+    gender_id = np.asarray([{'male': 1, 'female': 2}[g] for g in a["genders"]], dtype=np.float32)
+    for img_path, image in zip(img_paths, images):
+        i = frame_idx[os.path.splitext(os.path.basename(img_path))[0]]
+        image.update({
+            'camera_pose': camera_pose.astype(np.float32),
+            'T_w2c': T_w2c,
+            'intrinsics': intrinsics.astype(np.float32),
+            'smpl_mask': a["visible"][i].astype(np.bool_),
+            'smpl_root_pose': a["smpl_root_pose"][i].reshape(2, 1, 3).astype(np.float32),
+            'smpl_body_pose': a["smpl_body_pose"][i].astype(np.float32),
+            'smpl_shape': a["smpl_shape"][i].astype(np.float32),
+            'smpl_transl': a["smpl_transl"][i].astype(np.float32),
+            'smpl_gender_id': gender_id,
+        })
     return images
