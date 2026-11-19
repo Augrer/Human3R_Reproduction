@@ -294,13 +294,19 @@ README and `dataset.md`, read 2026-11-19) defines none and lists no test pairs; 
 `meta.npz` `mono_cam` as "the selected camera view for vision tasks in monocular setting".
 
 **De facto test split = BUDDI's.** Müller et al., *Generative Proxemics: A Prior for 3D Social
-Interaction from Images* (BUDDI), arXiv:2306.09337v2 (venue not checked; the arXiv page lists none), Sup. Mat. S4.2 "Hi4D", quoted from
-the arXiv HTML version on 2026-11-19 (to be checked against the PDF before the report):
+Interaction from Images* (BUDDI), arXiv:2306.09337v2 (venue not checked; the arXiv page lists none). All quotes below
+**checked against the arXiv v2 PDF on 2026-11-19** (23 pages; text extracted with Ghostscript `txtwrite`,
+page numbers are PDF pages). Sup. Mat. S4.2 "Hi4D" (PDF p. 15):
 - "We split this dataset by subject pair into 14/3/3 for train/val/test."
 - "We use subjects [00, 01, 02, 09, 10, 13, 14, 17, 18, 21, 23, 27, 28, 37] for training, [16,19,22] for validation, and [12, 15, 32] for testing."
 - "The dataset provides a start and end frame from/to which each sequence involves physical contact between two people."
 - "We use every 5th frame from the contact sequence for training and testing."
-- Main text, metrics: "We also report the joint PA-MPJPE computed by performing Procrustes alignment of both people together."
+- Main text Sec. 4 (PDF p. 6): "We randomly split the data into 14/3/3 pairs for train/val/test and use every fifth frame after the
+  firest [sic] contact between the two subjects, resulting in about 1K mesh pairs for training."
+- Main text, metrics (PDF p. 6): "We also report the joint PA-MPJPE computed by performing Procrustes alignment of both people together."
+- Table 2 caption (PDF p. 8; repeated as Table S5): "The first block shows methods that do not use Hi4D data during training or are
+  optimization based without access to priors trained on Hi4D." (Precedent for H10: separating methods by Hi4D training.)
+- Note: S4.2 says "subjects [00, …]" but the IDs are pair IDs (20 pairs = 14 + 3 + 3; Hi4D folders `pair00` … `pair37`).
 
 Reused by later work:
 - Wang et al., *PromptHMR: Promptable Human Mesh Recovery*, CVPR 2025, arXiv:2504.06397v2, Sec. 4:
