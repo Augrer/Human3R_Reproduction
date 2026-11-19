@@ -64,7 +64,7 @@ Claim list follows the 2026-11-15 Fable review (file not in the repo, see F2); C
 | # | Claim (paper) | Status | Evidence / plan |
 |---|---|---|---|
 | C1 | Local human mesh, Table 1: 3DPW 44.1 / 71.2 / 84.9 and EMDB-1 48.5 / 73.9 / 86.0 (PA-MPJPE / MPJPE / PVE, mm) | ≈ 3DPW (0.5–1.7 mm above paper) · ✅ EMDB-1 | 3DPW job 21592963 (all 24 seqs): 44.6 / 72.8 / 86.6, section 7; gap not yet explained (G18; TF32 ruled out 2026-11-19). EMDB-1 job 21670793 (17/17 seqs): **48.5 / 73.9 / 86.0**, identical to Table 1, section 7. |
-| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ✅ RICH · ⏳ EMDB-2 | RICH as 4 parts, merged with upstream averaging (G15, G16). All 4 parts done and merged (191/191 videos): **110.0 / 184.4 / 3.3**, section 7. EMDB-2: job 21670794 killed by host-memory OOM after 3/25 sequences (64G); resubmitted 2026-11-19 with 192G as job 21699506 (section 6). |
+| C2 | Global human motion, Table 2: RICH 110.0 / 184.9 / 3.3 and EMDB-2 112.2 / 267.9 / 2.2 (WA-MPJPE / W-MPJPE mm / RTE %) | ✅ RICH · ✅ EMDB-2 | RICH as 4 parts, merged with upstream averaging (G15, G16). All 4 parts done and merged (191/191 videos): **110.0 / 184.4 / 3.3**, section 7. EMDB-2 job 21699506 (25/25 seqs, 192G after an OOM at 64G): **112.0 / 267.9 / 2.2**, section 7. |
 | C3 | Camera pose, Fig. 9a: Human3R ATE on TUM-D, lower than TTT3R and CUT3R | ✅ Human3R curve · 🔜 comparison | Section 7: all 12 lengths match. Baseline curves not yet run. |
 | C4 | Video depth, Fig. 9b and Table 10: Bonn metric-scale Abs Rel / δ<1.25 | ✅ Human3R curve and Table 10 · 🔜 comparison | Section 7: all 10 lengths match; Table 10 = `bonn_100` metric exactly (G4). |
 | C5 | Real-time: 15 FPS on an RTX 4090, 8 GB, speed independent of the number of people | 🔜 partly | 15 FPS is the ViT-S/672 model (G9), not downloaded yet; no 4090 here, report H100 inference-only timing (G16). Reference values per dataset: Table 4 (RTX 4090): ViT-S/672 13.6–15.9 FPS, ViT-L/896 5.1–5.4 FPS. People-count dependence: CMU Panoptic extension. |
@@ -185,11 +185,12 @@ gwn10 writes timestamps in UTC, the other nodes in CET). Results:
 | 2026-11-19 | 21623935 | 3DPW TF32 off | a3dc794 | **Done**, exit 0, 196 min, H100 SXM (gwn08), 24/24 sequences, 35,080 matched, no OOM or exception lines, staging 151 s, peak GPU memory 7.9 GB. Headline 44.6 / 72.8 / 86.6, identical to 21592963; per sequence ≤ 0.1 mm (F1). |
 | 2026-11-19 | 21670793 | EMDB-1 | 4838671 | **Done**, exit 0, 126 min (sacct 2:10), H100 SXM (gwn08), 17/17 sequences, 23,342 matched people, no OOM or exception lines, staging 171 s (16 GB), peak GPU memory 7.7 GB, host MaxRSS 71 GB (request 64G). Result in section 7. |
 | 2026-11-19 | 21670794 | EMDB-2 | 4838671 | **OUT_OF_MEMORY** (host RAM, Slurm oom_kill; GPU peak only 7.7 GB) after 43 min, on the 4th sequence `P7/55_outdoor_walk` (2,179 frames); 3 sequences finished (`P2/19`, `P3/29`, `P4/35`). Host memory grows with sequence length (`launch.py` loads all images of a sequence up front and accumulates per-frame views and GT targets), and 3 EMDB-2 sequences are longer still (up to 3,280 frames, `P2/24_outdoor_long_walk`). The 23 GB staged copy in `/tmp` may also count toward the job's memory (unverified; Slurm reports `TmpDisk=0` for gwn08). Partial folder kept as `emdb2_human3r_oom_21670794`. The upstream per-sequence OOM catch (G12) does not apply: the process was SIGKILLed. |
-| 2026-11-19 | 21699506 | **EMDB-2 resubmitted**: identical command and arguments to 21670794, fresh folder `emdb2_human3r`, `--constraint="h100&sxm"`, **`--mem=192G`** (gwn08 has 512 GB), 16 h limit | 55aeac2 (`src/`, `eval/` identical to 4838671) | Submitted 08:31 CET, started 08:38 on gwn09 (H100 SXM). |
+| 2026-11-19 | 21699506 | **EMDB-2 resubmitted**: identical command and arguments to 21670794, fresh folder `emdb2_human3r`, `--constraint="h100&sxm"`, **`--mem=192G`** (gwn08 has 512 GB), 16 h limit | 55aeac2 (`src/`, `eval/` identical to 4838671) | **Done**, exit 0, 3 h 38 min (216 min in the log), gwn09, 25/25 sequences, 42,458 matched people, no OOM or exception lines, staging 252 s (23 GB), peak GPU memory 7.7 GB, **host MaxRSS 121.5 GB** (so 64G could never have worked; request ≥ 160G for EMDB-2). Result in section 7. |
 | 2026-11-19 | 21700084 | **Hi4D crash test (extension, not a report number)**: `pair00` (dance00 / fight00 / highfive00, camera 4 = `mono_cam`, 385 frames, 770 person-frames), `env H3R_HI4D_SPLIT=pair00`, `launch.py --eval_dataset hi4d` with the 3DPW `run.sh` arguments (size 512, reset 100, TTT3R), MIG 1g.10gb, not staged, folder `hi4d_pair00_check`. Annotations from `repro/datasets_preprocess/prepare_hi4d.py` (self-checks: SMPL vs Hi4D's shipped vertices ≤ 0.0004 mm, world→camera ≤ 0.0009 mm); eval path checked on CPU first (`repro/checks/check_hi4d_annots.py`: ≤ 0.0008 mm, overlays checked by eye, genders correct). SETUP_NOTES item 5. | 0d33d48 | **Done**, exit 0, 28 min (mostly cold start), peak GPU memory 6.8 GB, 3/3 sequences, no OOM or exception lines. 770 / 770 person-frames matched, precision / recall 100 %. PA-MPJPE / MPJPE / PVE 30.7 / 47.6 / 57.2 mm (per action: dance 36.4 / 49.5 / 64.5, fight 28.1 / 47.7 / 53.0, highfive 26.6 / 44.5 / 53.0). MIG and 3 sequences only: pipeline check, not a result. |
 | 2026-11-19 | 21700758 | **Hi4D protocol test** (extension): as 21700084 but with the BUDDI protocol code (stride-5 scoring, matched-mesh dump; SETUP_NOTES item 6), folder `hi4d_pair00_stride5_check`, MIG | 437dfdf | **Done**, exit 0, 27 min, 3/3 sequences, no OOM or exception lines. 154 matched person-frames = 770 / 5 (28 + 30 + 19 scored frames × 2 people), precision / recall 100 %; headline 30.8 / 47.6 / 57.4 (vs 30.7 / 47.6 / 57.2 on every frame). `repro/hi4d_metrics.py` reproduces the logged 24-joint per-sequence values within 0.047 mm (log rounding 0.05) and gives Pair-PA-MPJPE 41.2 (24 joints) / 38.5 (14 joints) over 77 pair-frames. Pipeline check, not a result. |
 | 2026-11-19 | 21700571 | Hi4D test data: `tools/hi4d_extract_pairs.sbatch` (job 21700571, CPU wn038, 26 min) unpacked pair12, pair15_1/_2, pair32_1/_2 into `data/Hi4D/<pair>/<action>` (every file size-checked; archives with and without a pair folder handled). `prepare_hi4d.py --pairs pair12 pair15 pair32`: split `test` = 15 actions, 1,850 contact frames, 3,700 person-frames, all visible; `test_allcams` = 120 sequences (8 cameras), 14,800 frames. Self-checks ≤ 0.001 mm; `check_hi4d_annots.py` on `test` OK (≤ 0.0008 mm, overlays checked by eye: male–male / male–female / female–female pairs all correct). | ca3b22d | Done (CPU). `mono_cam` varies per action (4, 16, 52, 76, 88). |
-| 2026-11-19 | 21701131 | **Hi4D test, main protocol** (section 8, H1–H10): split `test`, staged (`repro/splits/hi4d_test_stage.txt`), fresh folder `hi4d_test_human3r`, `--constraint="h100&sxm"`, 3 h limit | ca3b22d | Submitted 10:52 CET. Afterwards: `python repro/hi4d_metrics.py eval_results/global_human/hi4d_test_human3r`. |
+| 2026-11-19 | 21701131 | **Hi4D test, main protocol** (section 8, H1–H10): split `test`, staged (`repro/splits/hi4d_test_stage.txt`), fresh folder `hi4d_test_human3r`, `--constraint="h100&sxm"`, 3 h limit | ca3b22d | **Done**, exit 0, 32 min, gwn09, 15/15 sequences, no OOM or exception lines, staging 71 s (532 MB), peak GPU memory 7.2 GB, host MaxRSS 7.9 GB. 716 of 740 scored person-frames matched (precision 100 %, recall 97.3 %), 346 of 370 scored frames with both people matched. `hi4d_metrics.py` self-check 0.049 mm. Result in section 8. |
+| 2026-11-19 | 21701177 | Hi4D remaining data: `tools/hi4d_extract_pairs.sbatch` on the other 26 archives (CPU wn035, 78 min, 6 in parallel) | – | All 26 archives extracted and size-checked; job status FAILED only because `pair01` contained two macOS `.DS_Store` files at the pair level, left in `_tmp_pair01` by the "temp folder not empty" check; all 5 pair01 actions were moved. Leftover removed by hand. `data/Hi4D`: 20 pairs, 452 GB. |
 | 2026-11-19 | 21701132 | **Hi4D test, all-8-cameras variant** (H5): split `test_allcams`, staged (`hi4d_test_allcams_stage.txt`, 4.2 GB), folder `hi4d_test_allcams_human3r`, H100 SXM, 6 h limit | ca3b22d | Submitted 10:52 CET. |
 
 Practical observations:
@@ -241,6 +242,19 @@ Units: WA-/W-MPJPE in mm, RTE in % (the log labels them cm, G13).
 
 Not in the paper's table: PA-MPJPE 47.6, MPJPE 71.1, PVE 78.9 mm (camera frame); precision 83.5 %, recall 98.6 % (logged; 104,468 matched of 106,446 labelled frames = 98.1 %, G19).
 **Reproduced** (W-MPJPE 0.5 mm lower, the others identical).
+
+### EMDB-2 global human motion (job 21699506; Table 2)
+
+All 25 `EMDB2_LIST` sequences (43,205 frames), `run_emdb2.sh` arguments (reset **50**, size 512, TTT3R), H100 SXM (gwn09), 192G host memory.
+Units: WA-/W-MPJPE in mm, RTE in % (the log labels them cm, G13); n_human-weighted mean.
+
+| | WA-MPJPE | W-MPJPE | RTE |
+|---|---|---|---|
+| Ours | 112.0 | 267.9 | 2.2 |
+| Paper Table 2 | 112.2 | 267.9 | 2.2 |
+
+Not in the paper's table: PA-MPJPE 38.2, MPJPE 59.3, PVE 71.1, PA-PVE 48.6 mm (camera frame); precision 95.3 %, recall 98.7 %, F1 96.6 %. Matched people 42,458 of 43,205 frames (98.3 %).
+**Reproduced** (WA-MPJPE 0.2 mm lower, the others identical). The interim mean after 17/25 sequences was 115.3 / 270.8 / 2.2; only the full set is a report number.
 
 ### TUM-dynamics camera pose (job 21559068; Fig. 9a)
 
@@ -336,6 +350,7 @@ so the published protocols differ in details; literature numbers are context, no
 | H8 | Pair-PA-MPJPE: one similarity transform for both people's stacked joints, frames where both are matched | BUDDI ("joint PA-MPJPE"), PromptHMR Sec. 8.4 |
 | H9 | Run arguments as for 3DPW (`--size 512 --reset_interval 100 --use_ttt3r`) | Human3R `run.sh` (local mesh) |
 | H10 | Fair literature context: methods **not trained on Hi4D** (PromptHMR Table 2 ∗ rows), since Human3R never saw Hi4D | |
+| H11 | **[ours] All-pairs zero-shot variant** (decided 2026-11-19): all 20 pairs, `mono_cam`, same scoring as H2–H8, split `all`, labelled as a variant. Headline stays the BUDDI test split (comparable with the literature); the all-pairs number is the more robust estimate of Human3R on Hi4D (20 pairs vs 3). Valid only because no component saw Hi4D (below). | user decision; this section |
 
 **Has any part of Human3R seen Hi4D? No (checked 2026-11-19).** The released checkpoint is built from
 `cut3r_512_dpt_4_64.pth` and `multiHMR_896_L.pt` (`config/trian_human3r.yaml` lines 8–9) and fine-tuned on
@@ -349,7 +364,30 @@ BEDLAM only (Human3R paper, "Training Strategy"; CUT3R and the Multi-HMR encoder
 - Not checkable: DINOv2's web-image pretraining data (LVD-142M); Hi4D is access-controlled, so contamination
   is unlikely but not provable.
 Consequence: for Human3R every Hi4D pair is unseen. The BUDDI test split (H1) is for comparability with
-published numbers, not for holding out training data; an all-pairs run would be a valid zero-shot number
-too (needs the remaining archives unpacked).
+published numbers, not for holding out training data; the all-pairs run (H11) is a valid zero-shot number
+too (all archives unpacked 2026-11-19, job 21701177).
 
-| H11 | **[ours] All-pairs zero-shot variant** (decided 2026-11-19): all 20 pairs, `mono_cam`, same scoring as H2–H8, split `all`, labelled as a variant. Headline stays the BUDDI test split (comparable with the literature); the all-pairs number is the more robust estimate of Human3R on Hi4D (20 pairs vs 3). Valid only because no component saw Hi4D (above). | user decision; this section |
+### Results: BUDDI test split, `mono_cam` (job 21701131)
+
+Pairs 12 / 15 / 32, 15 actions, every frame as input, scored on every 5th contact frame (370 frames,
+740 person-frames). Matched 716 person-frames (recall 97.3 %, precision 100 %); pair metric over the 346 frames
+with both people matched. mm; pooled over matched person-frames (= upstream n_human weighting).
+
+| | PA-MPJPE | MPJPE | PVE | Pair-PA-MPJPE |
+|---|---|---|---|---|
+| Human3R, 24 SMPL joints (`launch.py` log) | 46.4 | 58.5 | 72.6 | 59.8 |
+| Human3R, 14 H36M joints (H7) | 42.8 | 57.9 | – | 57.5 |
+| *Context, PromptHMR Table 2, "HI4D (14)", not trained on Hi4D:* | | | | |
+| Multi-HMR∗ | 49.8 | 67.8 | – | 80.6 |
+| PromptHMR∗ | 39.2 | 63.9 | – | 78.1 |
+| *Context, CISyn Table 2 (joint set not stated):* Multi-HMR | 52.8 | 86.7 | 106.2 | – |
+
+Per action (24 joints, PA-MPJPE): 26.2 (fight12) to 63.7 (backhug15). Above 50 mm: backhug15, talk12,
+hug12, sidehug32, kiss15, hug15, pose15 (mostly the tight-contact actions); the other 8 are 26–45 mm. Per-sequence table
+in `eval_results/global_human/hi4d_test_human3r/hi4d_metrics.json`.
+
+Reading: on per-person PA-MPJPE (14 joints) Human3R sits between Multi-HMR∗ and PromptHMR∗; on MPJPE
+and Pair-PA-MPJPE it is lower than both. **Not a like-for-like comparison:** the joint set is our guess (H7);
+our pair metric skips frames where a person is missed (24 of 370), while how the papers treat misses is not
+stated; Human3R sees the whole video (H4); and the two papers already disagree on Multi-HMR by 3 / 19 mm.
+The Pair-PA-MPJPE gap (~20 mm) is large enough to look at before quoting it.
