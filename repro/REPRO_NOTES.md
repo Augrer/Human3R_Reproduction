@@ -351,3 +351,5 @@ BEDLAM only (Human3R paper, "Training Strategy"; CUT3R and the Multi-HMR encoder
 Consequence: for Human3R every Hi4D pair is unseen. The BUDDI test split (H1) is for comparability with
 published numbers, not for holding out training data; an all-pairs run would be a valid zero-shot number
 too (needs the remaining archives unpacked).
+
+| H11 | **[ours] All-pairs zero-shot variant** (decided 2026-11-19): all 20 pairs, `mono_cam`, same scoring as H2–H8, split `all`, labelled as a variant. Headline stays the BUDDI test split (comparable with the literature); the all-pairs number is the more robust estimate of Human3R on Hi4D (20 pairs vs 3). Valid only because no component saw Hi4D (above). | user decision; this section |
